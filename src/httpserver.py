@@ -1,4 +1,4 @@
-usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # This file is part of the Battl3ship game.
@@ -41,8 +41,8 @@ from message import *
 default_http_port = 8080
 
 # Be verbose?
-be_verbose = True
-be_superverbose = True and be_verbose
+be_verbose = False
+be_superverbose = False and be_verbose
 
 
 class HTTPGameServer:
