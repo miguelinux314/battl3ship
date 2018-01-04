@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # This file is part of the Battl3ship game.
@@ -142,8 +142,9 @@ class HTTPGameServer:
         invocation = "lessc html_root/style.less html_root/style.css"
         status, output = commands.getstatusoutput(invocation)
         if status != 0:
-            raise Exception("Status = {} != 0.\nInput=[{}].\nOutput=[{}]".format(
-                status, invocation, output))
+            if be_verbose:
+                print "Could not update CSS: Status = {} != 0.\nInput=[{}].\nOutput=[{}]".format(
+                    status, invocation, output)
 
     def _process_and_forward_tcp_message(self, message, websocket_handler):
         """Called each time a tcp message is received by the tcp_client associated to websocket_handler.
@@ -182,11 +183,3 @@ class HTTPGameServer:
 if __name__ == '__main__':
     gamer_server = HTTPGameServer(port=default_http_port)
     gamer_server.serve_forever()
-
-    # application = tornado.web.Application([
-    #     (r"/ws/?(.*)", WebSocketHandler),
-    #     (r"/(.*)", tornado.web.StaticFileHandler, {"path": "./html_root", "default_filename": "index.html"}),
-    # ])
-    #
-    # application.listen(server_port, "0.0.0.0")
-    # tornado.ioloop.IOLoop.instance().start()
