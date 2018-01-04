@@ -35,5 +35,5 @@ The first player sinking all of their opponent's ships wins!
 4. Other players can join you at http://[Your_public_IP](https://whatismyipaddress.com/):8080
 5. Play!
 
-Note that you will have to configure your firewalls to let traffic through port TCP 8080.  [MacOS instructions (not mine)](https://www.macworld.co.uk/how-to/mac-software/how-open-specific-ports-in-os-x-1010-firewall-3616405/) [Windows instructions (also not mine)](http://www.tomshardware.com/faq/id-3114787/open-firewall-ports-windows.html) 
+Note that you will have to configure your firewalls to let traffic through port TCP 8080. You may need [instructions for MacOS(not mine)](https://www.macworld.co.uk/how-to/mac-software/how-open-specific-ports-in-os-x-1010-firewall-3616405/) or [instructions for Windows (also not mine)](http://www.tomshardware.com/faq/id-3114787/open-firewall-ports-windows.html).
 Don't forget to [forward ports in your router](https://www.pcworld.com/article/244314/how_to_forward_ports_on_your_router.html), too!
