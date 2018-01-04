@@ -154,8 +154,11 @@ $(document).ready(function() {
         $("div#home").hide();
         $("div#popup_results").hide();
         $("div#popup_incoming_shot").hide();
-        $("div#popup_help").hide();
+        // $("div#popup_help").hide();
     }
+    $("button#help_button").click(function() {
+        window.open("https://github.com/miguelinux314/battl3ship#rules-and-help", "_blank");
+    });
     $("div#their_board").hide();
     $("div#turns").hide();
     $("span#player_list_contents").show();

@@ -583,10 +583,23 @@ div#current_game div#popup_incoming_shot div#game_over_label {
   color: red;
 }
 /* Help */
-div#popup_help {
-  top: 200px;
-  width: 30%;
-  margin: auto;
+div#help_button_wrapper {
+  position: absolute;
+  top: 0px;
+  left: 95%;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+div#help_button_wrapper button {
+  width: 30px;
+  height: 30px;
+  font-size: 100%;
+  font-weight: bold;
+  position: relative;
+  padding-top: 0px;
+  display: table-cell;
+  vertical-align: middle;
 }
 /* Error */
 div#error {
