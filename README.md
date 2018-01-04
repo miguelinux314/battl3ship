@@ -24,7 +24,7 @@ The first player sinking all of their opponent's ships wins!
 ### Dependencies
 * Python 2.7: [Windows Installer](https://www.python.org/ftp/python/2.7.14/python-2.7.14.msi), [Mac OSX Installers](https://www.python.org/downloads/release/python-2714/), installed by default in most Linuxes.
 * The [Tornado](http://www.tornadoweb.org/en/stable/) python library. You can _either_:
-  * Execute install_dependencies.py
+  * Execute `install_dependencies.py`
   * or run `pip install tornado`
   * or go to http://www.tornadoweb.org/en/stable/ and follow their instructions
   
