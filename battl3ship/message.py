@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 # This file is part of the Battl3ship game.
 # 
@@ -14,14 +13,13 @@
 #     GNU General Public License for more details.
 # 
 #     You should have received a copy of the GNU General Public License
-#     along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+#     along with Battl3ship.  If not, see <http://www.gnu.org/licenses/>.
 """Messages used to communicate players and server.
 
 Message subtypes must allow an __init__() call without arguments.
 Only information contained in data_dict is passed when a message is sent.
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
-__date__ = "16/09/2017"
 
 import sys
 import inspect
@@ -53,9 +51,9 @@ class Message():
 
         if self.data_dict is not None:
             # Filter _* just in case
-            for k, v in self.data_dict.iteritems():
+            for k, v in self.data_dict.items():
                 if k[0] != "_":
-                    self.__dict__[k] = v
+                    self.__setattr__(k, v)
         self.encode()
 
     def __eq__(self, other):
@@ -79,13 +77,15 @@ class Message():
 
         if self.data_dict is not None:
             # Filter _* just in case
-            for k, v in self.data_dict.iteritems():
+            for k, v in self.data_dict.items():
                 if k[0] != "_":
-                    self.__dict__[k] = v
-        for k, v in self.data_dict.iteritems():
+                    self.__setattr__(k, v)
+        for k, v in self.data_dict.items():
             self.data_dict[k] = v
 
-        return json.dumps(self.data_dict)
+        encoded_text = json.dumps(self.data_dict)
+
+        return encoded_text
 
     @staticmethod
     def parse_data(data, player_from=None, player_to=None):
@@ -105,7 +105,10 @@ class Message():
                         and name.startswith("Message") \
                         and "." not in name:
 
-                    message = possible_class_member(data_dict=data_dict, player_from=player_from, player_to=player_to)
+                    message = possible_class_member(
+                        data_dict=data_dict,
+                        player_from=player_from,
+                        player_to=player_to)
                     if not isinstance(message, Message):
                         message = None
                     message.encode()
@@ -121,8 +124,8 @@ class Message():
 
         string = "[{}".format(self.__class__.__name__)
         if self.data_dict is not None:
-            for k, v in self.data_dict.iteritems():
-                string += u"\n\t{} = {}".format(k, v).encode("utf8")
+            for k, v in self.data_dict.items():
+                string += "\n\t{} = {}".format(k, v)
         string += "]"
         return string
 
@@ -145,7 +148,7 @@ class MessageHello(Message):
 
     def encode(self):
         self.data_dict = {
-            "name": unicode(self.name),
+            "name": str(self.name),
             "password": self.password,
             "id": self.id,
         }
@@ -308,10 +311,12 @@ class MessageStartGame(Message):
         }
         return Message.encode(self)
 
+
 class MessageProposeBoardPlacement(Message):
     """
     s2p([boat1_row_col_list, ..., boatN_row_col_list) # Propose a board placement, one list of coordinates per boat
     """
+
     def __init__(self, boat_row_col_lists=None, *args, **kwargs):
         self.boat_row_col_lists = boat_row_col_lists
         Message.__init__(self, *args, **kwargs)
@@ -322,12 +327,14 @@ class MessageProposeBoardPlacement(Message):
         }
         return Message.encode(self)
 
+
 class MessageShot(Message):
     """
     p2s: player (must by their turn) makes this shot - awaits for MessageShotResult
     s2p: player receives this shot - turn changes. First shot has row_col_list=None to indicate player to start firing.
          player is responsible for detecting when this shot finishes the game
     """
+
     def __init__(self, row_col_lists=None, *args, **kwargs):
         self.row_col_lists = row_col_lists
         Message.__init__(self, *args, **kwargs)
@@ -338,10 +345,12 @@ class MessageShot(Message):
         }
         return Message.encode(self)
 
+
 class MessageShotResult(Message):
     """
     s2p: result of the last shot (accepted) - next turn.
     """
+
     def __init__(self, hit_length_list=None, sunk_length_list=None, game_finished=False, *args, **kwargs):
         """result_list = ['(h|s)\(d+)'|...] -> hit|sink boat_length
         """

@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 # This file is part of the Battl3ship game.
 # 
@@ -14,18 +13,17 @@
 #     GNU General Public License for more details.
 # 
 #     You should have received a copy of the GNU General Public License
-#     along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+#     along with Battl3ship.  If not, see <http://www.gnu.org/licenses/>.
 """Minimal game client with an API to control a game programatically.
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
-__date__ = "16/09/2017"
 
 import sys
 import time
 import socket
 import random
 import threading
-import Queue
+import queue
 
 from player import Player
 from message import *
@@ -37,7 +35,7 @@ import tcpserver
 default_password = tcpserver.default_password
 
 # Be verbose?
-be_verbose = True
+be_verbose = False
 be_superverbose = False and be_verbose
 
 
@@ -71,9 +69,10 @@ class GenericGameClient:
         self._message_stream = TCPMessageStream(
             bytes_message_length=tcpserver.BYTES_MESSAGE_FIELD,
             max_message_length=tcpserver.MAX_MESSAGE_LENGTH,
-            buffer_size=tcpserver.BUFFER_SIZE)
-        self._incoming_messages = Queue.Queue()
-        self._outgoing_messages = Queue.Queue()
+            buffer_size=tcpserver.BUFFER_SIZE,
+            name=f"Player:{player_name}")
+        self._incoming_messages = queue.Queue()
+        self._outgoing_messages = queue.Queue()
         # Start the threads that watch the queues
         t = threading.Thread(target=self._process_incoming_messages)
         t.daemon = True
@@ -90,13 +89,11 @@ class GenericGameClient:
 
     def connect(self):
         if be_verbose:
-            print "[tcpclient.connect] Connecting to {}:{}".format(self.server_ip, self.server_port)
+            print("[tcpclient.connect] Connecting to {}:{}".format(self.server_ip, self.server_port))
 
         self.tcp_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcp_connection.connect((self.server_ip, self.server_port))
         self.player.tcp_connection = self.tcp_connection
-
-        pending_data = ""
 
         hello_message = MessageHello(
             player_from=self.player,
@@ -106,7 +103,7 @@ class GenericGameClient:
         self._outgoing_messages.put(hello_message)
 
         response_message, pending_data = self._message_stream.receive_one_message(
-            pending_data=pending_data, tcp_connection=self.tcp_connection, player_from=self.server_player)
+            tcp_connection=self.tcp_connection, player_from=self.server_player, pending_data=None)
 
         self.callback_incoming_message(response_message)
         if response_message.data_dict["type"] == MessageHello.__name__:
@@ -117,15 +114,15 @@ class GenericGameClient:
                 response_message))
 
         t = threading.Thread(target=self._receive_messages_forever,
-                             args=(self._incoming_messages, self.tcp_connection, self.server_player, pending_data))
+                             args=(self._incoming_messages, self.tcp_connection, self.server_player))
         t.daemon = True
         t.start()
 
         return self.tcp_connection
 
-    def _receive_messages_forever(self, queue, tcp_connection, player_from, pending_data, ignore_ioerrors=True):
+    def _receive_messages_forever(self, queue, tcp_connection, player_from, pending_data=None, ignore_ioerrors=True):
         """Run tcpmessagestream.receive_messages until it throws an IOError (connection closed),
-        which is ignored if ignore_ioerrors is True
+        which is ignored if ignore_ioerrors is True.
         """
         try:
             self._message_stream.receive_messages(
@@ -136,13 +133,13 @@ class GenericGameClient:
 
     def disconnect(self):
         if be_verbose:
-            print "[tcpclient.disconnect] Closing client ({})".format(self.player)
+            print("[tcpclient.disconnect] Closing client ({})".format(self.player))
         self.tcp_connection.shutdown(socket.SHUT_RDWR)
         self.tcp_connection.close()
 
     def _process_incoming_messages(self):
         if be_superverbose:
-            print "[tcpclient._process_outgoing_messages] Started"
+            print("[tcpclient._process_outgoing_messages] Started")
 
         while True:
             message = self._incoming_messages.get()
@@ -152,12 +149,12 @@ class GenericGameClient:
 
     def _process_outgoing_messages(self):
         if be_superverbose:
-            print "[tcpclient._process_outgoing_messages] Started"
+            print("[tcpclient._process_outgoing_messages] Started")
 
         while True:
             message = self._outgoing_messages.get()
             if be_superverbose:
-                print "[tcpclient._process_outgoing_messages]", "Output message:", message
+                print("[tcpclient._process_outgoing_messages]", "Output message:", message)
             self._message_stream.send_message(message=message, tcp_connection=self.tcp_connection)
 
 
@@ -169,13 +166,14 @@ class Py3SinkClient(GenericGameClient):
     """
 
     def process_incoming_message(self, message):
-        print "(Not ignored) >>>>>>>>>>", message
+        if be_superverbose:
+            print(f"(Not ignored) >>>>>>>>>> {message}")
 
         if message.type == MessageBye.__name__:
             if message.id == self.player.id:
                 if be_verbose:
-                    print "[tcpclient.process_incoming_message] We've been kicked. Extra info: {}".format(
-                        message.extra_info_str)
+                    print("[tcpclient.process_incoming_message] We've been kicked. Extra info: {}".format(
+                        message.extra_info_str))
                 self.disconnect()
             else:
                 with self._lock:
@@ -188,40 +186,42 @@ class Py3SinkClient(GenericGameClient):
                         self.player_list.remove(Player(id=message.id))
                     except ValueError:
                         if be_superverbose:
-                            print "[tcpclient.process_incoming_message] Received bogus BYE message " \
-                                  "for player not in player_list (id={}, list={}=".format(message.id, self.player_list)
+                            print("[tcpclient.process_incoming_message] Received bogus BYE message " \
+                                  "for player not in player_list (id={}, list={}=".format(message.id, self.player_list))
 
 
         elif message.type == MessageHello.__name__:
             new_player = Player(id=message.id, name=message.name)
             with self._lock:
                 if be_verbose:
-                    print u"[tcpclient.process_incoming_message({}): adding player {}".format(self.player.name,
-                                                                                             new_player.name)
+                    print("[tcpclient.process_incoming_message({}): adding player {}".format(self.player.name,
+                                                                                             new_player.name))
                 self.player_list.append(new_player)
 
         elif message.type == MessagePlayerList.__name__:
             self.player_list = [Player(id=id, name=name) for name, id in message.name_id_list]
+            if not self.player_list:
+                raise ValueError("Received an _empty_ Player List message")
 
             new_id = [player.id for player in self.player_list if player.name == self.player.name][0]
             if new_id != self.player.id or self.player.id == Player.UNKNOWN_ID:
                 if be_verbose:
-                    print u"[tcpclient.process_incoming_message]({}): Server changed my id {} -> {}".format(
-                        self.player.name, self.player.id, new_id)
+                    print("[tcpclient.process_incoming_message]({}): Server changed my id {} -> {}".format(
+                        self.player.name, self.player.id, new_id))
             self.player.id = new_id
             if be_verbose:
-                print u"[tcpclient.process_incoming_message({})]: Received player list {}".format(
-                    self.player.name, [p.name for p in self.player_list])
+                print("[tcpclient.process_incoming_message({})]: Received player list {}".format(
+                    self.player.name, [p.name for p in self.player_list]))
 
         elif message.type == MessageChallenge.__name__:
             if be_verbose:
-                print u"[tcpclient.process_incoming_message]({}): Received CHALLENGE".format(
-                    self.player.name)
+                print("[tcpclient.process_incoming_message]({}): Received CHALLENGE".format(
+                    self.player.name))
 
             if self.player.id in [message.recipient_id, message.origin_id] or message.recipient_id is None:
                 if be_superverbose:
-                    print u"[tcpclient.process_incoming_message]({}): Adding CHALLENGE to list: {}".format(
-                        self.player.name, message)
+                    print("[tcpclient.process_incoming_message]({}): Adding CHALLENGE to list: {}".format(
+                        self.player.name, message))
                 with self._lock:
                     self.open_challenges.append(message)
 
@@ -231,34 +231,34 @@ class Py3SinkClient(GenericGameClient):
                     dummyChallenge = MessageChallenge(origin_id=message.origin_id)
                     self.open_challenges.remove(dummyChallenge)
                     if be_verbose:
-                        print u"[tcpclient.process_incoming_message({})] Received and processed CANCEL: {}".format(
-                            self.player, message)
+                        print("[tcpclient.process_incoming_message({})] Received and processed CANCEL: {}".format(
+                            self.player, message))
                 except ValueError:
                     if be_verbose:
-                        print u"[tcpclient.process_incoming_message({})] Received CANCEL challenge " \
-                              u"not in self.open_challenges".format(self.player.name)
+                        print("[tcpclient.process_incoming_message({})] Received CANCEL challenge " \
+                              "not in self.open_challenges".format(self.player.name))
 
         elif message.type == MessageStartGame.__name__:
             if be_verbose:
-                print u"tcpclient.process_incoming_message({})] Received and processed START".format(
-                    self.player.name)
+                print("tcpclient.process_incoming_message({})] Received and processed START".format(
+                    self.player.name))
 
         elif message.type == MessageShot.__name__:
             if be_verbose:
-                print u"[tcpclient.process_incoming_message] Received SHOT {}".format(message)
+                print("[tcpclient.process_incoming_message] Received SHOT {}".format(message))
 
         elif message.type == MessageShotResult.__name__:
             if be_verbose:
-                print u"[tcpclient.process_incoming_message] Ignoring SHOT results {}".format(message)
+                print("[tcpclient.process_incoming_message] Ignoring SHOT results {}".format(message))
 
         else:
             if be_verbose:
-                print "[tcpclient.process_incoming_message] IGNORING incoming message: {}".format(message)
+                print("[tcpclient.process_incoming_message] IGNORING incoming message: {}".format(message))
 
     if __name__ == '__main__':
-        print "/" * 40
-        print "{:/^40s}".format("    CLIENT    ")
-        print "/" * 40
+        print("/" * 40)
+        print("{:/^40s}".format("    CLIENT    "))
+        print("/" * 40)
 
         ip = "127.0.0.1"
         port = 3333
@@ -273,5 +273,5 @@ class Py3SinkClient(GenericGameClient):
         # print "Sending cheeky hello message"
         # client.send_message(MessageHello(player_from=client.player, player_to=client.server_player))
 
-        print "----- Connected. Waiting ~forever"
+        print("----- Connected. Waiting ~forever")
         time.sleep(100000000)

@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 # This file is part of the Battl3ship game.
 # 
@@ -14,15 +13,14 @@
 #     GNU General Public License for more details.
 # 
 #     You should have received a copy of the GNU General Public License
-#     along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+#     along with Battl3ship. If not, see <http://www.gnu.org/licenses/>.
 """Represent the state of a game
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
-__date__ = "25/09/2017"
 
 ############################ Begin configurable part
 # Be verbose?
-be_verbose = True
+be_verbose = False
 
 
 ############################ End configurable part
@@ -46,7 +44,7 @@ class Game3Shots:
         self.player_b_board = Game3Shots.Board(width=self.default_board_width, height=self.default_board_height)
 
         self.player_turn = starting_player
-        self.winner_player = None # set only after game is finished
+        self.winner_player = None  # set only after game is finished
         self.accepting_shots = False
 
     @property
@@ -89,7 +87,7 @@ class Game3Shots:
             raise Exception("[set_boats] Error! player {} not player_a {} nor player_b {}".format(
                 player, self.player_a, self.player_b))
 
-        print "Setting boats for", player, ":", row_col_lists
+        print("Setting boats for", player, ":", row_col_lists)
         assert not board.locked
         for row_col_list in row_col_lists:
             for row, col in row_col_list:
@@ -110,8 +108,8 @@ class Game3Shots:
                     boat_count_by_length[len(row_col_list)] += 1
                 else:
                     boat_count_by_length[len(row_col_list)] = 1
-            assert len(boat_count_by_length.values()) == len(self.required_boat_count_by_length.values())
-            assert all([v == boat_count_by_length[k] for k, v in self.required_boat_count_by_length.iteritems()])
+            assert len(list(boat_count_by_length.values())) == len(list(self.required_boat_count_by_length.values()))
+            assert all([v == boat_count_by_length[k] for k, v in self.required_boat_count_by_length.items()])
 
             # pool of all used squares (check no duplicates)
             used_row_col_list = [tuple(row_col)
@@ -177,7 +175,7 @@ class Game3Shots:
         def __init__(self, width, height):
             self.width = width
             self.height = height
-            self.square_by_xy = {(x, y): Game3Shots.Square(x, y) for x in xrange(width + 1) for y in xrange(height + 1)}
+            self.square_by_xy = {(x, y): Game3Shots.Square(x, y) for x in range(width + 1) for y in range(height + 1)}
             self.locked = False
             self.shots = []
             self.boat_row_col_list = None
@@ -225,7 +223,7 @@ class Game3Shots:
                         game_finished = False
                         break
 
-            return map(len, hit_boats), map(len, sunk_boats), game_finished
+            return list(map(len, hit_boats)), list(map(len, sunk_boats)), game_finished
 
         def __getitem__(self, xy_tuple):
             if len(xy_tuple) != 2:
@@ -233,11 +231,11 @@ class Game3Shots:
             if isinstance(xy_tuple[0], slice) or isinstance(xy_tuple[1], slice):
                 matching_squares = []
                 if isinstance(xy_tuple[0], slice):
-                    x_coordinates = xrange(*xy_tuple[0].indices(self.width))
+                    x_coordinates = range(*xy_tuple[0].indices(self.width))
                 else:
                     x_coordinates = [xy_tuple[0]]
                 if isinstance(xy_tuple[1], slice):
-                    y_coordinates = xrange(*xy_tuple[1].indices(self.height))
+                    y_coordinates = range(*xy_tuple[1].indices(self.height))
                 else:
                     y_coordinates = [xy_tuple[1]]
 
@@ -281,15 +279,15 @@ def test():
             assert board[x, y].x == x
             assert board[x, y].y == y
 
-    print board[0, 0]
+    print(board[0, 0])
     import random
     boat_list = [random.randint(0, 10) for _ in range(random.randint(10, 20))]
     shot_id_list = [random.randint(0, 10) for _ in range(random.randint(25, 30))]
     board[0, 0].shot_id_list = list(shot_id_list)
     board[0, 0].boat_list = list(boat_list)
-    print board[0, 0]
+    print(board[0, 0])
 
-    print "[game.py] Tests ok!"
+    print("[game.py] Tests ok!")
 
 
 if __name__ == '__main__':

@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 # This file is part of the Battl3ship game.
 #
@@ -14,19 +13,18 @@
 #     GNU General Public License for more details.
 #
 #     You should have received a copy of the GNU General Public License
-#     along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+#     along with Battl3ship.  If not, see <http://www.gnu.org/licenses/>.
 """Represent a player in the game
 
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
-__date__ = "16/09/2017"
-
 
 import threading
 
 ############################ Begin configurable part
 # Be verbose?
-be_verbose = True
+be_verbose = False
+
 
 class Player:
     _lock = threading.Lock()
@@ -41,7 +39,7 @@ class Player:
         self.ip = ip
         self.port = port
         self.server = server
-        self.name = unicode(name)
+        self.name = str(name)
         if id is None and unique_id:
             with Player._lock:
                 self.id = Player.next_id
@@ -52,8 +50,8 @@ class Player:
             self.id = id
 
     def __str__(self):
-        s = u"[Player(id={id},name={name})]".format(
-            id=self.id, ip=self.ip, port=self.port, name=self.name).encode("utf-8")
+        s = "[Player(id={id},name={name})]".format(
+            id=self.id, ip=self.ip, port=self.port, name=self.name)
         return s
 
     def __repr__(self):
@@ -65,6 +63,4 @@ class Player:
     def __hash__(self):
         return hash(self.id)
 
-
 ############################ End configurable part
-

@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 # This file is part of the Battl3ship game.
 # 
@@ -14,11 +13,10 @@
 #     GNU General Public License for more details.
 # 
 #     You should have received a copy of the GNU General Public License
-#     along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+#     along with Battl3ship.  If not, see <http://www.gnu.org/licenses/>.
 """Use pip to install any unmet dependencies.
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
-__date__ = "18/09/2017"
 
 import importlib
 import pip
@@ -36,24 +34,24 @@ def install_dependencies():
     """Use pip to install any unmet dependencies.
     """
     if be_verbose:
-        print "-" * 40
-        print "{:-^40s}".format("  Installing Dependencies  ")
-        print "-" * 40
-        print
+        print("-" * 40)
+        print("{:-^40s}".format("  Installing Dependencies  "))
+        print("-" * 40)
+        print()
 
     for lib_name in library_dependencies:
         try:
             importlib.import_module(lib_name)
         except ImportError:
             if be_verbose:
-                print "-" * 5, "Installing {}...".format(lib_name)
+                print("-" * 5, "Installing {}...".format(lib_name))
             result = pip.main(["install", "--user", "-q", lib_name])
             if result != 0:
                 raise Exception("[install_dependencies] Error! Cannot install dependency {}".format(lib_name))
 
     if be_verbose:
-        print
-        print "[install_dependencies] OK! All dependencies met!"
+        print()
+        print("[install_dependencies] OK! All dependencies met!")
 
 
 if __name__ == '__main__':

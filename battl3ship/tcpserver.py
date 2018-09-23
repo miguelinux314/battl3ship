@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 # This file is part of the Battl3ship game.
 # 
@@ -14,17 +13,16 @@
 #     GNU General Public License for more details.
 # 
 #     You should have received a copy of the GNU General Public License
-#     along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+#     along with Battl3ship.  If not, see <http://www.gnu.org/licenses/>.
 """TCP Server for the Py3Sink game.
 
 Implements an API that allows clients to connect,
 challenge each other and send their game decisions.
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
-__date__ = "15/09/2017"
 
-import Queue
-import SocketServer
+import queue
+import socketserver
 import os
 import socket
 import threading
@@ -38,13 +36,14 @@ from game import Game3Shots
 ############################ Begin configurable part
 
 default_port = 3333
-# default_password = u"peña" # Unicode is highly advised
 default_password = None
 
 local_host_ip = "127.0.0.1"
 
 max_connections = 128  # Maximum total number of connections
 max_connections_per_ip = 128  # Maximum number of allowed connections from the same server_ip
+
+max_player_name_length = 30
 
 BUFFER_SIZE = 1024
 BYTES_MESSAGE_FIELD = 6
@@ -86,10 +85,11 @@ class GenericGameServer:
         self._message_stream = TCPMessageStream(
             bytes_message_length=BYTES_MESSAGE_FIELD,
             max_message_length=MAX_MESSAGE_LENGTH,
-            buffer_size=BUFFER_SIZE)
+            buffer_size=BUFFER_SIZE,
+            name="Server")
         # This TCP server invokes the _handle_connection in a separate thread for each connection
         GenericGameServer._RequestHandler.game_server = self
-        SocketServer.TCPServer.allow_reuse_address = True
+        socketserver.TCPServer.allow_reuse_address = True
         self._tcp_server = GenericGameServer._ThreadedTCPServer(
             (local_host_ip, self.port), GenericGameServer._RequestHandler)
         self._tcp_server.allow_reuse_address = True  # In case a previous instance was killed without proper shoutdown
@@ -97,8 +97,8 @@ class GenericGameServer:
         # Message queues
         # Each que is processed asynchronously in order by a single thread
         # (threads can safely pass queues from one queue to another as long as there are no infinite loops)
-        self._incoming_messages = Queue.Queue()
-        self._outgoing_messages = Queue.Queue()
+        self._incoming_messages = queue.Queue()
+        self._outgoing_messages = queue.Queue()
         self._player_outgoing_messages = dict()  # One queue per player
         # Start the threads associated to the queues
         t = threading.Thread(target=self._process_incoming_messages)
@@ -124,8 +124,8 @@ class GenericGameServer:
                         self.send_message_to_player(player=player, message=in_message)
             except IndexError:
                 if be_verbose:
-                    print "[tcpserver.remove_challenge_and_notify] Received bogus CancelChallenge from {}".format(
-                        in_message.player_from)
+                    print("[tcpserver.remove_challenge_and_notify] Received bogus CancelChallenge from {}".format(
+                        in_message.player_from))
 
     def process_incoming_message(self, message):
         raise Exception("[tcpserver.process_incoming_message] Error! Subclasses must implement this method")
@@ -133,11 +133,11 @@ class GenericGameServer:
     def serve_forever(self):
         try:
             if be_verbose:
-                print "[tcpserver.serve_forever] Starting TCP Server @ port {}".format(self.port)
+                print("[tcpserver.serve_forever] Starting TCP Server @ port {}".format(self.port))
             self._tcp_server.serve_forever()
         finally:
             if be_verbose:
-                print "[tcpserver.serve_forever] Ended serving forever"
+                print("[tcpserver.serve_forever] Ended serving forever")
 
     def send_message(self, message):
         """Queue an outgoing message and return.
@@ -151,7 +151,7 @@ class GenericGameServer:
         """Process valid incoming message and call the process_incoming_message method sequentially.
         """
         if be_superverbose:
-            print "[tcpserver._process_incoming_messages] Started"
+            print("[tcpserver._process_incoming_messages] Started")
         while True:
             message = self._incoming_messages.get()
             self.process_incoming_message(message)
@@ -164,15 +164,15 @@ class GenericGameServer:
         queues.
         """
         if be_superverbose:
-            print "[tcpserver._process_outgoing_messages] Started"
+            print("[tcpserver._process_outgoing_messages] Started")
 
         while True:
             message = self._outgoing_messages.get()
             if be_superverbose:
-                print "[tcpserver._process_outgoing_messages >>>] Processing message {}".format(message)
+                print("[tcpserver._process_outgoing_messages >>>] Processing message {}".format(message))
             try:
                 self.send_message_to_player(message=message, player=message.player_to)
-            except KeyError:
+            except KeyError as ex:
                 pass
 
     def _send_messages_to_player(self, player, *args, **kwargs):
@@ -184,7 +184,7 @@ class GenericGameServer:
                 # Queue every 5 seconds to allow disposing of threads associated to disconnected players
                 message = self._player_outgoing_messages[player].get(timeout=5)
                 self._message_stream.send_message(message=message, tcp_connection=player.tcp_connection)
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             except KeyError:
                 break
@@ -195,7 +195,6 @@ class GenericGameServer:
         new_player = Player(tcp_connection=tcp_connection, ip=client_ip, port=client_port, server=self)
 
         broken_connection = False
-        pending_data = ""
 
         try:
             with self._lock:
@@ -208,14 +207,14 @@ class GenericGameServer:
                     self._message_stream.send_message(message=message, tcp_connection=tcp_connection)
                     return
                 if be_verbose:
-                    print "[tcpserver._handle_connection] Valid incoming connection from {}:{}".format(client_ip,
-                                                                                                       client_port)
+                    print("[tcpserver._handle_connection] Valid incoming connection from {}:{}".format(client_ip,
+                                                                                                       client_port))
 
                 # Wait for Hello from player
                 if be_verbose:
-                    print "[tcpserver._handle_connection] Waiting for player's hello..."
+                    print("[tcpserver._handle_connection] Waiting for player's hello...")
                 initial_message, pending_data = self._message_stream.receive_one_message(
-                    pending_data=pending_data, tcp_connection=tcp_connection, player_from=new_player)
+                    pending_data=None, tcp_connection=tcp_connection, player_from=new_player)
 
                 if not isinstance(initial_message, MessageHello) or initial_message.data_dict["name"].strip() == "":
                     message = MessageBye(
@@ -226,47 +225,50 @@ class GenericGameServer:
                 # Check for password if necessary
                 if self.password is not None:
                     if initial_message.data_dict["password"] != self.password:
-                        print u">>>>>> self {}".format(self.password)
+                        print(">>>>>> self {}".format(self.password))
 
                         message = MessageBye(
                             player_from=self.server_player, id=new_player.id,
                             extra_info_str="Wrong user/pass!".format(initial_message))
                         self._message_stream.send_message(message=message, tcp_connection=tcp_connection)
                         return
-                # Check name is unique
+                # Check name is unique and satisfies restrictions
+                new_player.name = initial_message.data_dict["name"].strip()
+                if len(new_player.name) > max_player_name_length:
+                    message = MessageBye(
+                        player_from=self.server_player, id=new_player.id, extra_info_str="Invalid name")
+                    self._message_stream.send_message(message=message, tcp_connection=tcp_connection)
+                    return
                 for player in self.player_list:
-                    if player.name.strip() == initial_message.data_dict["name"].strip():
+                    if player.name.strip().lower() == initial_message.data_dict["name"].strip().lower():
                         message = MessageBye(
                             player_from=self.server_player, id=new_player.id,
                             extra_info_str="Name already in use - please connect again.")
                         self._message_stream.send_message(message=message, tcp_connection=tcp_connection)
                         return
-                # Update player data
-                new_player.name = initial_message.data_dict["name"].strip()
                 if be_verbose:
-                    print "[tcpserver._handle_connection] Player connected!", new_player
+                    print("[tcpserver._handle_connection] Player connected!", new_player)
 
-                # Add player and notify
+                # Add player to the list and notify other players
                 self.player_list.append(new_player)
-                self._player_outgoing_messages[new_player] = Queue.Queue()
+                self._player_outgoing_messages[new_player] = queue.Queue()
                 t = threading.Thread(target=self._send_messages_to_player, args=(new_player,))
                 t.daemon = True
                 t.start()
 
                 for player in self.player_list:
-                    print "Notifying {} for new player {}".format(player, new_player)
+                    if be_verbose:
+                        print(f"[tcpserver._handle_connection]: Notifying {player} for new player {new_player}")
 
-                    message = MessageHello(player_from=new_player,
-                                           player_to=player,
-                                           name=new_player.name,
-                                           id=new_player.id)
-                    self._outgoing_messages.put(message)
+                    self._outgoing_messages.put(MessageHello(player_from=new_player,
+                                                             player_to=player,
+                                                             name=new_player.name,
+                                                             id=new_player.id))
 
-                message = MessagePlayerList(
+                self._outgoing_messages.put(MessagePlayerList(
                     player_from=self.server_player,
                     player_to=new_player,
-                    player_list=list(self.player_list))
-                self._outgoing_messages.put(message)
+                    player_list=list(self.player_list)))
 
                 for open_challenge in self.pending_challenge_messages:
                     if open_challenge.recipient_id is None:
@@ -275,8 +277,10 @@ class GenericGameServer:
                             player_to=new_player,
                             origin_id=open_challenge.origin_id,
                             recipient_id=open_challenge.recipient_id)
-                        print ">>>>>> tcpserver Notifying of open challenges to new player {}:\n{}".format(
-                            new_player, message)
+                        if be_superverbose:
+                            print("[tcpserver._handle_connection]:  Notifying of open challenges "
+                                  "to new player {}:\n{}".format(
+                                new_player, message))
                         self._outgoing_messages.put(message)
 
             # Get all messages from this player
@@ -289,13 +293,13 @@ class GenericGameServer:
             # Cleanup is done at finally
         except MessageException as ex:
             if be_verbose:
-                print "[tcpserver._handle_connection] Wrong message syntax for {}: {}. Kicking them!".format(
-                    new_player, ex)
+                print("[tcpserver._handle_connection] Wrong message syntax for {}: {}. Kicking them!".format(
+                    new_player, ex))
 
         except IOError:
             # Connection was closed
             if be_verbose:
-                print "[tcpserver._handle_connection] Broken connection from {}:{}".format(client_ip, client_port)
+                print("[tcpserver._handle_connection] Broken connection from {}:{}".format(client_ip, client_port))
             broken_connection = True
 
         finally:
@@ -303,7 +307,7 @@ class GenericGameServer:
                 # Make sure that connection is closed now
                 try:
                     if be_verbose:
-                        print "[tcpserver._handle_connection] Closing connection for", new_player
+                        print("[tcpserver._handle_connection] Closing connection for", new_player)
                     with self._lock:
                         tcp_connection.shutdown(socket.SHUT_RDWR)
                         tcp_connection.close()
@@ -313,8 +317,8 @@ class GenericGameServer:
             # Cleanup and say good-bye to other players
             with self._lock:
                 if be_verbose:
-                    print "[tcpserver._handle_connection] Removing player {} from server and notifying".format(
-                        new_player)
+                    print("[tcpserver._handle_connection] Removing player {} from server and notifying".format(
+                        new_player))
 
                 # Remove any pending challenges from the player
                 try:
@@ -323,7 +327,7 @@ class GenericGameServer:
                 except ValueError:
                     pass
 
-                print ">>>> TODO: remove any games being played by new_player (also make BYE remove that)"
+                print(">>>> TODO: remove any games being played by new_player (also make BYE remove that)")
 
                 if new_player in self.player_list:
                     self.player_list.remove(new_player)
@@ -332,13 +336,13 @@ class GenericGameServer:
                         self.send_message_to_player(player=player, message=message)
                     del self._player_outgoing_messages[new_player]
 
-    class _ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         """Threaded TCP server, obviously, as described in
         https://docs.python.org/2/library/socketserver.html#asynchronous-mixins
         """
         pass
 
-    class _RequestHandler(SocketServer.BaseRequestHandler):
+    class _RequestHandler(socketserver.BaseRequestHandler):
         """Wrapper for GenericGameServer._handle_connection(·)
         """
         game_server = None
@@ -348,7 +352,7 @@ class GenericGameServer:
 
     def kick_player(self, player, extra_info_str, notify_others=True):
         if be_verbose:
-            print "[tcpserver.kick_player] Kicking ", player, " :: ", extra_info_str
+            print("[tcpserver.kick_player] Kicking ", player, " :: ", extra_info_str)
 
         out_message = MessageBye(
             id=player.id,
@@ -395,7 +399,7 @@ class Py3SinkServer(GenericGameServer):
                     return
 
                 if Game3Shots.players_to_id(in_message.player_from,
-                                            in_message.player_to) in self.active_game_by_id.values():
+                                            in_message.player_to) in list(self.active_game_by_id.values()):
                     self.kick_player(player=in_message.player_from.id, extra_info_str="Cannot duplicate game.")
                     return
 
@@ -419,7 +423,7 @@ class Py3SinkServer(GenericGameServer):
                     pass
 
                 if be_verbose:
-                    print "[tcpserver.process_incoming_message] Posting CHALLENGE {}".format(in_message)
+                    print("[tcpserver.process_incoming_message] Posting CHALLENGE {}".format(in_message))
                 self.pending_challenge_messages.append(in_message)
 
                 # Notify relevant players
@@ -453,7 +457,7 @@ class Py3SinkServer(GenericGameServer):
                         player_a=player_a,
                         player_b=player_b,
                         starting_player=starting_player)
-                    print "NEW GAME: {}".format(new_game)
+                    print("NEW GAME: {}".format(new_game))
                     assert new_game.id not in self.active_game_by_id
                     self.active_game_by_id[new_game.id] = new_game
 
@@ -484,18 +488,18 @@ class Py3SinkServer(GenericGameServer):
 
                 except IndexError:
                     if be_verbose:
-                        print "[tcpserver.process_incoming_message] Received bogus ACCEPT {} " \
+                        print("[tcpserver.process_incoming_message] Received bogus ACCEPT {} " \
                               "not in self.pending_challenge_messages {}".format(in_message,
-                                                                                 self.pending_challenge_messages)
+                                                                                 self.pending_challenge_messages))
 
         elif in_message.type == MessageProposeBoardPlacement.__name__:
             with self._lock:
                 if be_verbose:
-                    print "[tcpserver.process_incoming_message] Received BOARD PLACEMENT"
+                    print("[tcpserver.process_incoming_message] Received BOARD PLACEMENT")
 
                 try:
                     game = [game
-                            for game in self.active_game_by_id.values()
+                            for game in list(self.active_game_by_id.values())
                             if in_message.player_from.id in [game.player_a.id, game.player_b.id]][0]
                 except IndexError:
                     self.kick_player(in_message.player_from,
@@ -507,20 +511,20 @@ class Py3SinkServer(GenericGameServer):
                     if game.player_a_board.locked and game.player_b_board.locked:
                         game.accepting_shots = True
                         self.send_message_to_player(message=MessageShot(), player=game.player_turn)
-                        print "TODO: START actual game - notify both players "
+                        print("TODO: START actual game - notify both players ")
                 except Exception as ex:
                     if be_verbose:
-                        print "[tcpserver.process_incoming_message] Exception setting boards: {}".format(ex)
+                        print("[tcpserver.process_incoming_message] Exception setting boards: {}".format(ex))
                     self.kick_player(player=in_message.player_from, extra_info_str="Invalid boat placement!")
 
         elif in_message.type == MessageShot.__name__:
             with self._lock:
                 if be_verbose:
-                    print "[tcpserver.process_incoming_message] Received Shot"
+                    print("[tcpserver.process_incoming_message] Received Shot")
 
                 try:
                     game = [game
-                            for game in self.active_game_by_id.values()
+                            for game in list(self.active_game_by_id.values())
                             if in_message.player_from.id in [game.player_a.id, game.player_b.id]][0]
                 except IndexError:
                     self.kick_player(player=in_message.player_from,
@@ -554,13 +558,13 @@ class Py3SinkServer(GenericGameServer):
                                                 player=game.player_turn)
 
                     if be_verbose:
-                        print "[process_incoming_message] Received shot {}. " \
+                        print("[process_incoming_message] Received shot {}. " \
                               "Results: {} hit, {} sink, finished={}".format(
-                            in_message, hit_length_list, sunk_length_list, game_finished)
+                            in_message, hit_length_list, sunk_length_list, game_finished))
 
                     if game_finished:
                         if be_verbose:
-                            print "[process_incoming_message] Finishing game {}".format(game)
+                            print("[process_incoming_message] Finishing game {}".format(game))
                         del (self.active_game_by_id[game.id])
 
                 except IndexError:
@@ -574,14 +578,14 @@ class Py3SinkServer(GenericGameServer):
                     #     return
 
         else:
-            print "[tcpserver.process_incoming_message] Ignoring incoming in_message", in_message
+            print("[tcpserver.process_incoming_message] Ignoring incoming in_message", in_message)
 
 
 def start_server(port, password):
     """Start the game server and serve forever
     """
     if be_verbose:
-        print "Starting on server_port {}".format(port)
+        print("Starting on server_port {}".format(port))
     server = Py3SinkServer(port=port, password=password)
     server.serve_forever()
 
@@ -589,33 +593,33 @@ def start_server(port, password):
 ############################ Begin main executable part
 
 def test():
-    print
+    print()
     test_message()
 
-    print "[All tests ok!]"
+    print("[All tests ok!]")
 
 
 def show_help(message=""):
     message = message.strip()
     if message != "":
-        print "-" * len(message)
-        print message
-        print "-" * len(message)
-    print "Usage:", os.path.basename(sys.argv[0]), "[<server_port>={}]".format(default_port)
+        print("-" * len(message))
+        print(message)
+        print("-" * len(message))
+    print("Usage:", os.path.basename(sys.argv[0]), "[<server_port>={}]".format(default_port))
 
 
 if __name__ == "__main__":
     if len(sys.argv) == 2 and sys.argv[1].lower() == "test":
-        print "Running some tests..."
+        print("Running some tests...")
         test()
         exit(0)
     if len(sys.argv) not in [1, 2]:
         show_help("Incorrect argument count")
         exit(1)
 
-    print "/" * 40
-    print "{:/^40s}".format("    SERVER    ")
-    print "/" * 40
+    print("/" * 40)
+    print("{:/^40s}".format("    SERVER    "))
+    print("/" * 40)
 
     port = default_port
     if len(sys.argv) >= 2:

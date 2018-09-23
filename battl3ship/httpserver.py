@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 #
 # This file is part of the Battl3ship game.
 # 
@@ -14,20 +13,19 @@
 #     GNU General Public License for more details.
 # 
 #     You should have received a copy of the GNU General Public License
-#     along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+#     along with Battl3ship.  If not, see <http://www.gnu.org/licenses/>.
 """HTTP server for the Py3Sink game.
 
 Uses the tornado HTTP server for handling normal and  WebSocket requests
 
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
-__date__ = "18/09/2017"
 
 import time
 import threading
 import random
 import json
-import commands
+import subprocess
 import tornado.web
 import tornado.ioloop
 import tornado.websocket
@@ -74,7 +72,7 @@ class HTTPGameServer:
         """Blockingly serve all incoming requests
         """
         if be_verbose:
-            print "[httpserver.serve_forever] Starting HTTP server at port {}".format(self.port)
+            print("[httpserver.serve_forever] Starting HTTP server at port {}".format(self.port))
         self.tornado_application.listen(self.port, "0.0.0.0")
         tornado.ioloop.IOLoop.instance().start()
 
@@ -85,21 +83,21 @@ class HTTPGameServer:
             # Parse input message_data as JSON
             json_dict = json.loads(message_data)
             if be_superverbose:
-                print "--------------------------------------------------------------"
-                print "[process_ws_message] Received message_data with the following data:"
-                for k, v in json_dict.iteritems():
-                    print k, "::", v
-                print "--------------------------------------------------------------"
+                print("--------------------------------------------------------------")
+                print("[process_ws_message] Received message_data with the following data:")
+                for k, v in json_dict.items():
+                    print(k, "::", v)
+                print("--------------------------------------------------------------")
 
             # Connect new player first if necessary
             with self._lock:
                 existing_user = (websocket_handler in self.tcp_client_by_ws_handler)
             if not existing_user:
                 if "password" in json_dict:
-                    password = unicode(json_dict["password"])
+                    password = str(json_dict["password"])
                 else:
                     password = None
-                self.add_player(websocket_handler=websocket_handler, name=unicode(json_dict["name"]),
+                self.add_player(websocket_handler=websocket_handler, name=str(json_dict["name"]),
                                 password=password)
                 return
 
@@ -118,7 +116,7 @@ class HTTPGameServer:
 
     def close_ws_connection(self, websocket_handler):
         if be_verbose:
-            print "[close_ws_connection] Closing connection for {}".format(websocket_handler)
+            print("[close_ws_connection] Closing connection for {}".format(websocket_handler))
         with self._lock:
             tcp_client = self.tcp_client_by_ws_handler[websocket_handler]
             tcp_client.disconnect()
@@ -126,7 +124,7 @@ class HTTPGameServer:
 
     def add_player(self, websocket_handler, name, password):
         if be_superverbose:
-            print "[httpserver.add_player] Adding tcp client"
+            print("[httpserver.add_player] Adding tcp client")
 
         # Instantiate TCP client and connect to TCP server
         tcp_client = tcpclient.Py3SinkClient(
@@ -140,11 +138,11 @@ class HTTPGameServer:
 
     def _update_css_from_less(self):
         invocation = "lessc html_root/style.less html_root/style.css"
-        status, output = commands.getstatusoutput(invocation)
+        status, output = subprocess.getstatusoutput(invocation)
         if status != 0:
-            if be_verbose:
-                print "Could not update CSS: Status = {} != 0.\nInput=[{}].\nOutput=[{}]".format(
-                    status, invocation, output)
+            if be_verbose or True:
+                print("Could not update CSS: Status = {} != 0.\nInput=[{}].\nOutput=[{}]".format(
+                    status, invocation, output))
 
     def _process_and_forward_tcp_message(self, message, websocket_handler):
         """Called each time a tcp message is received by the tcp_client associated to websocket_handler.
@@ -176,6 +174,7 @@ class HTTPGameServer:
                                  args=(self,))
             t.daemon = False
             t.start()
+
 
 ############################ End configurable part
 
