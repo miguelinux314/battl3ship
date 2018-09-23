@@ -1,6 +1,6 @@
 div.primary {
   background-color: rgba(0, 0, 200, 0.2);
-  padding: 20px;
+  padding: 10px;
   border-radius: 10px;
   box-shadow: 5px 5px 5px #000000;
 }
@@ -8,7 +8,7 @@ div.primary button {
   width: 125px;
   padding-top: 10px;
   padding-bottom: 10px;
-  font-size: 120%;
+  font-size: 90%;
   box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.5);
   text-shadow: 2px 2px rgba(0, 0, 0, 0.15);
   border: 2px solid rgba(0, 0, 150, 0.4);
@@ -16,7 +16,7 @@ div.primary button {
   border-radius: 20px;
   transition-duration: 0.1s;
   margin-top: 5px;
-  margin-bottom: 5px;
+  margin-bottom: 7px;
 }
 div.primary button::-moz-focus-inner {
   border: 0;
@@ -51,8 +51,8 @@ div.primary table tr.spacer {
 }
 div.primary table td,
 div.primary table th {
-  height: 50px;
-  padding: 10px;
+  /*height: 50px;*/
+  padding: 5px;
 }
 div.primary table tr:not(.spacer):nth-child(odd) {
   background-color: rgba(200, 200, 250, 0.75);
@@ -64,15 +64,6 @@ div.primary table tr.spacer,
 div.primary table tr.spacer td {
   height: 1px;
 }
-div#title {
-  width: 100%;
-}
-div#title h1 {
-  text-align: center;
-  margin-top: 5px;
-  margin-bottom: 15px;
-}
-/* Background */
 div#bg_video {
   position: fixed;
   top: 0;
@@ -87,21 +78,36 @@ video#bg_video {
   position: absolute;
   top: 0;
   left: 0;
+  /*     width: 100%; */
   width: 100%;
   height: auto;
+  min-height: 100vh;
+}
+div#title {
+  position: absolute;
+  top: 0%;
+  width: 100%;
+  height: 7vh;
+}
+div#title h1 {
+  text-align: center;
+  margin: 2vh;
+  font-size: 5vh;
 }
 div#login {
+  position: absolute;
+  top: 20vh;
+  left: 40%;
   width: 20%;
-  margin: auto;
+  padding: 10px;
 }
 div#login input {
-  width: 90%;
-  margin-left: 0;
-  margin-right: 0;
-  padding: 10px;
-  margin: 5px;
-  text-align: center;
+  width: 95%;
+  height: 25%;
+  display: block;
+  margin: 0 auto;
   font-size: large;
+  text-align: center;
   opacity: 0.5;
   color: #000096;
 }
@@ -109,13 +115,12 @@ div#login input.empty {
   color: #000096;
 }
 div#login button {
+  height: 25%;
   width: 70%;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 15px;
-  margin-bottom: 0px;
+  margin: 0px;
   padding: 5px;
   display: block;
+  margin: 0 auto;
   font-size: large;
   font-weight: bold;
   color: #000096;
@@ -125,66 +130,92 @@ div#login button:disabled {
   opacity: 0.2;
 }
 div#player_list {
-  width: 30%;
-  margin: auto;
+  position: absolute;
+  width: 40%;
+  top: 10vh;
+  left: calc(100% - 20% - 40% - 7%);
   overflow: auto;
-  max-height: 500px;
+  max-height: 85%;
 }
 div#player_list table {
   width: 100%;
 }
+div#player_list table td {
+  padding: 0 3px;
+}
 div#player_list table td.avatar {
-  width: 75px;
-  height: 75px;
+  width: 40px;
+  height: 40px;
 }
 div#player_list table td.name {
-  width: 300px;
+  width: 55%;
+}
+div#player_list table td.buttons {
+  text-align: center;
+}
+div#player_list table td.buttons button {
+  margin: 5px;
+  padding: 5px;
+  display: inline-block;
+  width: auto;
 }
 div#player_list table canvas {
-  height: 75px;
-  width: 75px;
+  height: 40px;
+  width: 40px;
   border: 5px solid rgba(255, 255, 255, 0.4);
   background-color: rgba(255, 255, 255, 0.4);
 }
 div#chat {
   position: absolute;
-  top: 60px;
-  left: 76%;
-  float: right;
+  margin: 0px;
+  padding: 7px;
+  top: 10vh;
+  left: calc(100% - 20% - 2.5%);
   width: 20%;
   display: block;
-  height: 635px;
+  height: 80vh;
+  z-index: -10;
+}
+div#chat h1 {
+  width: 100%;
+  height: 30px;
+  margin: 0px;
 }
 div#chat #chat_output {
   position: relative;
-  height: calc(85%);
-  width: 95%;
+  width: 90%;
+  height: calc(100% - 30px - 30px - 30px);
   background-color: rgba(255, 255, 255, 0.4);
   border: solid 2px rgba(150, 150, 200, 0.75);
-  margin-bottom: 0px;
   overflow: auto;
   padding: 10px;
+  margin: 0px;
 }
 div#chat input {
-  display: inline;
-  height: 30px;
-  margin-right: 0px;
-  background-color: rgba(255, 255, 255, 0.4);
+  display: inline-block;
   padding: 3px;
-  width: calc(80%);
+  margin-top: 2%;
+  margin-bottom: 2%;
+  height: calc(30px - 7px);
+  background-color: rgba(255, 255, 255, 0.4);
+  width: calc(100% - 30px - 20px);
 }
 div#chat button {
   float: right;
-  margin: 0px;
-  height: 40px;
-  width: 50px;
+  margin-top: 2%;
+  margin-bottom: 2%;
+  margin-right: 1%;
+  height: 30px;
+  width: 30px;
   font-weight: bold;
   border-radius: 10px;
-  padding: 5px;
+  padding: 0px;
+  /*        padding: 5px;*/
 }
 div#open_challenges {
-  margin: auto;
-  margin-bottom: 20px;
+  position: absolute;
+  top: 10vh;
+  left: 2.5%;
   width: 25%;
 }
 div#open_challenges table {
@@ -194,19 +225,24 @@ div#open_challenges table td.buttons {
   width: 100px;
 }
 div#current_game {
-  width: 70%;
-  margin-left: 2.5%;
-  margin-right: auto;
-  padding-bottom: 10px;
+  position: absolute;
+  top: 10vh;
+  left: 2%;
+  width: 140vh;
+  min-width: 140vh;
+  height: 80vh;
+  opacity: 1;
+  padding-top: 1vh;
+  vertical-align: middle;
+  background-color: #afaffa;
 }
 div#current_game div {
   display: table-cell;
-  vertical-align: top;
 }
 div#current_game div.board {
   padding: 0px;
-  width: 285px;
-  height: 300px;
+  /*        width: 300px;
+        height: 300px;*/
   -webkit-touch-callout: none;
   /* iOS Safari */
   -webkit-user-select: none;
@@ -218,8 +254,7 @@ div#current_game div.board {
   -ms-user-select: none;
   /* Internet Explorer/Edge */
   user-select: none;
-  /* Non-prefixed version, currently
-                                  supported by Chrome and Opera */
+  /* Non-prefixed version, currently supported by Chrome and Opera */
 }
 div#current_game div.board .content {
   display: grid;
@@ -229,19 +264,28 @@ div#current_game div.board .content {
 div#current_game div.board .content .cell {
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.8);
-  height: 25px;
-  width: 25px;
+  height: calc(100% / 12);
+  width: calc(100% / 12);
   border: 1px solid rgba(0, 0, 150, 0.4);
   vertical-align: middle;
 }
 div#current_game div.board .content .cell p {
-  vertical-align: middle;
+  vertical-align: middle !important;
   text-align: center;
   margin: 0.25em;
 }
-div#current_game div.board .content .cell.row0 p,
 div#current_game div.board .content .cell.col0 p {
-  margin-top: 20px;
+  text-align: right !important;
+  vertical-align: middle !important;
+  margin-right: 3px;
+  margin-top: auto !important;
+}
+div#current_game div.board .content .cell.row0 {
+  height: auto !important;
+}
+div#current_game div.board .content .cell.row0 p {
+  margin: 0px;
+  margin-bottom: 3px;
 }
 div#current_game div.board .content .cell.header {
   background: none;
@@ -280,7 +324,7 @@ div#current_game div.board .content .cell.with_shot:not(.fired) {
 }
 div#current_game div.board .content .cell.with_shot.fired p {
   font-weight: bold;
-  font-size: 200%;
+  font-size: 125%;
 }
 div#current_game div.board .content .cell:hover:not(.header):not(.disabled):not(.with_shot) {
   border: 4px solid rgba(0, 0, 150, 0.4);
@@ -351,10 +395,6 @@ div#current_game div.board .content .row10 {
 div#current_game div.board .content .col10 {
   grid-column: 11;
 }
-div#current_game div.big {
-  width: 600px !important;
-  height: 600px !important;
-}
 div#current_game div.big .cell.header {
   font-size: 20px;
 }
@@ -363,8 +403,10 @@ div#current_game div.big .cell.header p {
 }
 div#current_game div.big .cell {
   background: white;
-  width: 54px !important;
-  height: 54px !important;
+  /*width: 54px !important;
+            height: 54px !important;*/
+  width: calc(80vh / 12) !important;
+  height: calc(80vh / 12) !important;
 }
 div#current_game div#their_board p#info_board_marking {
   text-align: center;
@@ -383,7 +425,7 @@ div#current_game div#turns {
   width: 100%;
 }
 div#current_game div#turns div#wrapper_turn_list_table {
-  height: 450px;
+  max-height: 53vh;
   overflow-y: auto;
   width: 95%;
   display: block;
@@ -391,34 +433,41 @@ div#current_game div#turns div#wrapper_turn_list_table {
   padding-left: 25px;
 }
 div#current_game div#turns table#turn_list {
+  width: 95%;
   margin: auto;
+  /*th.shots {
+                min-width: 100px;
+            }
+
+            th.results {
+                min-width: 100px;
+            }
+            */
 }
 div#current_game div#turns table#turn_list td,
 div#current_game div#turns table#turn_list th {
-  height: 25px;
   padding: 5px;
 }
 div#current_game div#turns table#turn_list th {
   font-weight: bold;
+  font-size: 90%;
 }
 div#current_game div#turns table#turn_list th.index {
   text-align: center;
 }
-div#current_game div#turns table#turn_list th.shots {
-  min-width: 100px;
+div#current_game div#turns table#turn_list th.notes,
+div#current_game div#turns table#turn_list td.notes {
+  max-width: 15vh;
 }
-div#current_game div#turns table#turn_list th.results {
-  min-width: 100px;
-}
-div#current_game div#turns table#turn_list th.note {
-  min-width: 200px;
+div#current_game div#turns table#turn_list td {
+  font-size: 80%;
 }
 div#current_game div#turns table#turn_list input {
-  width: 95%;
+  width: 90%;
 }
 div#current_game div#status {
   width: 100%;
-  padding-left: 100px;
+  padding-left: 5vh;
 }
 div#current_game div#status table {
   width: 100%;
@@ -432,7 +481,10 @@ div#current_game div#status table tr {
 }
 div#current_game div#status table .label_status {
   color: rgba(0, 0, 150, 0.4);
-  font-size: 120%;
+  font-size: 110%;
+}
+div#current_game div#status img.img_status {
+  width: 7vh;
 }
 div#current_game div#current_shot {
   display: block;
@@ -443,15 +495,18 @@ div#current_game div#current_shot {
   vertical-align: middle;
 }
 div#current_game div#current_shot img.cross {
-  width: 60px;
-  height: 60px;
+  width: 9vh;
+  height: 9vh;
   vertical-align: middle;
-  margin-right: 10px;
+  margin-right: 0.1vh;
 }
 div#current_game div#current_shot img.cross.disabled {
   opacity: 0.3;
 }
 div#current_game div#current_shot button {
+  font-size: normal;
+  width: auto;
+  height: auto;
   margin-bottom: 12px;
 }
 div#current_game div#current_shot button:not(:disabled) {
@@ -464,19 +519,25 @@ div#current_game div#current_shot button:not(:disabled):hover {
   font-weight: bold;
 }
 div#current_game div#boat_placement {
-  width: 100%;
+  width: 60vh;
   vertical-align: middle;
-  padding-left: 50px;
+  padding-left: 5vh;
   text-align: center;
   margin: auto;
+  height: 80vh;
 }
 div#current_game div#boat_placement h1 {
   text-align: center;
   color: rgba(0, 0, 150, 0.4);
+  max-width: 60vh;
+  max-height: 8vh;
+  margin: 0px;
+  margin-bottom: 5px;
 }
 div#current_game div#boat_placement p#tip_boat_placement {
   text-align: center;
   font-style: italic;
+  max-height: 8vh;
 }
 div#current_game div#boat_placement .content {
   margin: auto;
@@ -494,9 +555,9 @@ div#current_game div#boat_placement table tr {
 div#current_game div#boat_placement table tr.remaining {
   padding: 0px;
   margin: 0px;
-}
-div#current_game div#boat_placement table tr.remaining td {
-  height: 15px;
+  /*td {
+                    height: 15px;
+                }*/
 }
 div#current_game div#boat_placement table td {
   background: none;
@@ -509,9 +570,9 @@ div#current_game div#boat_placement img.disabled {
   opacity: 0.2;
 }
 div#current_game div#boat_placement img.type {
-  width: 60px;
-  height: 60px;
-  padding: 10px;
+  width: 9vh;
+  height: 9vh;
+  padding: 7px;
   border-radius: 10px;
 }
 div#current_game div#boat_placement img.type:hover:not(.disabled),
@@ -522,13 +583,18 @@ div#current_game div#boat_placement img.type.selected {
   border: 5px solid rgba(0, 0, 150, 0.4);
 }
 div#current_game div#boat_placement img.orientation {
-  width: 150px;
-  height: 150px;
+  width: 18vh;
+  height: 18vh;
+}
+div#current_game div#boat_placement button {
+  height: auto;
+  padding: 3px;
+  font-size: normal;
 }
 div#current_game div.popup {
   border: 3px solid rgba(0, 0, 150, 0.4);
   position: absolute;
-  top: 150px;
+  top: 5vh;
   left: 40%;
   width: 30%;
   background: #afaffa;
@@ -552,7 +618,7 @@ div#current_game div.popup div#my_board .cell.col0 p {
   margin-top: 0.25em;
 }
 div#current_game div.popup #game_won_label {
-  font-size: 200%;
+  font-size: 120%;
   font-weight: bold;
   color: #009900;
   display: block;
@@ -573,8 +639,15 @@ div#current_game div.popup div#results_label p {
   text-align: center;
   width: 100%;
 }
+div#current_game div.popup .cell {
+  height: 25px !important;
+  width: 25px !important;
+}
 div#current_game div#popup_incoming_shot {
+  position: absolute;
   width: 300px;
+  left: calc(50% - 150px) !important;
+  top: 3vh;
   left: 700px;
 }
 div#current_game div#popup_incoming_shot div#game_over_label {
@@ -586,10 +659,12 @@ div#current_game div#popup_incoming_shot div#game_over_label {
 div#help_button_wrapper {
   position: absolute;
   top: 0px;
-  left: 95%;
+  left: calc(100% - 30px - 5px);
   border: none;
   background: none;
   box-shadow: none;
+  margin: 0;
+  padding: 0;
 }
 div#help_button_wrapper button {
   width: 30px;
@@ -603,9 +678,10 @@ div#help_button_wrapper button {
 }
 /* Error */
 div#error {
+  position: absolute;
+  top: 10vh;
+  left: 5vh;
   width: 30%;
-  margin: auto;
-  margin-bottom: 20px;
 }
 div#error h1,
 div#error p {

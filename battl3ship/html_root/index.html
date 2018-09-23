@@ -2,7 +2,8 @@
 <html>
 
 <head>
-    <title>3-BattleShip</title>
+    <meta charset="UTF-8">
+    <title>Battl3Ship</title>
     <link rel="stylesheet" type="text/css" href="style.css">
     <script type="text/javascript" src="jquery-3.2.1.min.js"></script>
     <script type="text/javascript" src="jquery-ui.min.js"></script>
@@ -20,7 +21,7 @@
 
 
 <div id="title">
-    <h1>Welcome to the 3-Battleship game</h1>
+    <h1>Welcome to Battl3ship</h1>
 </div>
 
 <div id="error" class="primary">
@@ -50,10 +51,11 @@
     <div id="current_game" class="primary">
         <div id="their_board" class="board big">
             <div class="content"></div>
-            <p id="info_board_marking">
+            <!--<p id="info_board_marking">
                 <strong class="water">[Ctrl]+click</strong> / <strong class="boat">[Shift]+click</strong>
-                to mark a cell as
-                <strong class="water">water</strong> / <strong class="boat">ship</strong>.</p>
+                to<br/>mark a cell as
+                <strong class="water">water</strong> / <strong class="boat">ship</strong>.
+            </p>-->
         </div>
 
 
@@ -80,7 +82,7 @@
                         <th class="index"></th>
                         <th class="shots">Shots</th>
                         <th class="results">Results</th>
-                        <th class="note">Notes (private)</th>
+                        <th class="notes">Notes (private)</th>
                     </tr>
                 </table>
             </div>
@@ -91,7 +93,7 @@
         </div>
 
         <div id="boat_placement">
-            <h1>Place your boats and hit confirm.</h1>
+            <h1>Place your boats</h1>
 
             <div class="content">
                 <table>
@@ -143,7 +145,8 @@
     <div id="chat" class="primary">
         <h1>Chatty chatty</h1>
         <div id="chat_output"></div>
-        <input type="text" id="chat_input" value=""><button class="ui-button ui-widget ui-corner-all" id="send_chat">&gt;</button>
+        <input type="text" id="chat_input" value="">
+        <button class="ui-button ui-widget ui-corner-all" id="send_chat">&gt;</button>
     </div>
 </div>
 

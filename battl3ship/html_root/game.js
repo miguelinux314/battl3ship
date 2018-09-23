@@ -31,8 +31,8 @@ game.empty_name_text = "Player name...";
 game.empty_password_text = "Password... (optional) ";
 game.waiting_for_player_text = "Waiting for opponent...";
 game.make_your_shot_text = "Fire your shots now";
-game.impossible_arrangement_text = "Your arrangement made it impossible to place all boats. Plase try again!"
-game.place_your_boards_text = "Place your boats and hit confirm.";
+game.impossible_arrangement_text = "Please try again!"
+game.place_your_boards_text = "Place your boats";
 
 /* Game state */
 game.STATE_DISCONNECTED = "disconnected";
@@ -620,7 +620,7 @@ function add_player(name, id, is_you, animate) {
 
     var new_html = "";
     new_html = new_html + "<tr class=\"player_id_"+ id +"\">";
-        new_html = new_html + "<td class=\"avatar\"><canvas width=75 height=75 class=\"avatar\" id=\"avatar_id_" + id + "\"></canvas></td>";
+        new_html = new_html + "<td class=\"avatar\"><canvas width=40 height=40 class=\"avatar\" id=\"avatar_id_" + id + "\"></canvas></td>";
     if (is_you) {
         new_html = new_html + "<td class=\"name\"><strong class=\"this_player_name\">" + sanitize(name) + "</strong> (you)</td>";
         new_html = new_html + "<td><button id=\"play_anyone\">Play with anyone</button></td>";
@@ -854,7 +854,7 @@ function reset_game_state() {
             <th class="index"></th>
             <th class="shots">Shots</th>
             <th class="results">Results</th>
-            <th class="note">Notes (private)</th>
+            <th class="notes">Notes (private)</th>
         </tr>`);
     $("div#current_game").fadeIn();
     $("#game_won_label").hide();
