@@ -141,7 +141,7 @@ class HTTPGameServer:
         status, output = subprocess.getstatusoutput(invocation)
         if status != 0:
             if be_verbose or True:
-                print("Could not update CSS: Status = {} != 0.\nInput=[{}].\nOutput=[{}]".format(
+                print("WARNING: Could not update CSS: Status = {} != 0.\nInput=[{}].\nOutput=[{}]".format(
                     status, invocation, output))
 
     def _process_and_forward_tcp_message(self, message, websocket_handler):

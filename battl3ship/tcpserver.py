@@ -31,7 +31,7 @@ import random
 from message import *
 from player import Player
 from tcpmessagestream import TCPMessageStream
-from game import Game3Shots
+from game import Battl3ship
 
 ############################ Begin configurable part
 
@@ -40,7 +40,7 @@ default_password = None
 
 local_host_ip = "127.0.0.1"
 
-max_connections = 128  # Maximum total number of connections
+max_connections = 256  # Maximum total number of connections
 max_connections_per_ip = 128  # Maximum number of allowed connections from the same server_ip
 
 max_player_name_length = 30
@@ -73,9 +73,7 @@ class GenericGameServer:
     def __init__(self, port=None, password=None):
         """Initialize but don't start serving (nonblocking)
         """
-        if port is None:
-            port = default_port
-        self.port = port
+        self.port = port if port is not None else default_port
         self.password = password
         self.player_list = []
         self.pending_challenge_messages = []
@@ -327,7 +325,9 @@ class GenericGameServer:
                 except ValueError:
                     pass
 
-                print(">>>> TODO: remove any games being played by new_player (also make BYE remove that)")
+                self.active_game_by_id = {id: game
+                                          for id, game in self.active_game_by_id.items()
+                                          if new_player not in [game.player_a, game.player_b]}
 
                 if new_player in self.player_list:
                     self.player_list.remove(new_player)
@@ -398,7 +398,7 @@ class Py3SinkServer(GenericGameServer):
                                          in_message.recipient_id, self.player_list))
                     return
 
-                if Game3Shots.players_to_id(in_message.player_from,
+                if Battl3ship.players_to_id(in_message.player_from,
                                             in_message.player_to) in list(self.active_game_by_id.values()):
                     self.kick_player(player=in_message.player_from.id, extra_info_str="Cannot duplicate game.")
                     return
@@ -453,11 +453,10 @@ class Py3SinkServer(GenericGameServer):
                                 for player in self.player_list
                                 if player.id == in_message.player_from.id][0]
                     starting_player = random.choice([player_a, player_b])
-                    new_game = Game3Shots(
+                    new_game = Battl3ship(
                         player_a=player_a,
                         player_b=player_b,
                         starting_player=starting_player)
-                    print("NEW GAME: {}".format(new_game))
                     assert new_game.id not in self.active_game_by_id
                     self.active_game_by_id[new_game.id] = new_game
 
@@ -511,8 +510,7 @@ class Py3SinkServer(GenericGameServer):
                     if game.player_a_board.locked and game.player_b_board.locked:
                         game.accepting_shots = True
                         self.send_message_to_player(message=MessageShot(), player=game.player_turn)
-                        print("TODO: START actual game - notify both players ")
-                except Exception as ex:
+                except ValueError as ex:
                     if be_verbose:
                         print("[tcpserver.process_incoming_message] Exception setting boards: {}".format(ex))
                     self.kick_player(player=in_message.player_from, extra_info_str="Invalid boat placement!")
@@ -528,17 +526,17 @@ class Py3SinkServer(GenericGameServer):
                             if in_message.player_from.id in [game.player_a.id, game.player_b.id]][0]
                 except IndexError:
                     self.kick_player(player=in_message.player_from,
-                                     extra_info_str="Error! Shot for game not active.")
+                                     extra_info_str="Shot in a non-active game.")
                     return
 
                 if not game.accepting_shots:
                     self.kick_player(player=in_message.player_from,
-                                     extra_info_str="Error! Shot in a game not accepting shots.")
+                                     extra_info_str="Shot in a game not accepting shots.")
                     return
 
                 if game.player_turn != in_message.player_from:
                     self.kick_player(player=in_message.player_from,
-                                     extra_info_str="Error! Shotting not in your turn.")
+                                     extra_info_str="Shotting not in your turn.")
                     return
 
                 try:
@@ -567,15 +565,10 @@ class Py3SinkServer(GenericGameServer):
                             print("[process_incoming_message] Finishing game {}".format(game))
                         del (self.active_game_by_id[game.id])
 
-                except IndexError:
+                except (IndexError, ValueError):
                     self.kick_player(player=in_message.player_from,
-                                     extra_info_str="Error! Invalid shot format (i)")
+                                     extra_info_str="Invalid shot")
                     return
-                    #
-                    # except (AttributeError, TypeError) as ex:
-                    #     self.kick_player(player=in_message.player_from,
-                    #                      extra_info_str="Error! Invalid shot format.")
-                    #     return
 
         else:
             print("[tcpserver.process_incoming_message] Ignoring incoming in_message", in_message)
@@ -609,7 +602,7 @@ def show_help(message=""):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2 and sys.argv[1].lower() == "test":
+    if len(sys.argv) == 2 and sys.argv[1].lower() == "test_syntax":
         print("Running some tests...")
         test()
         exit(0)

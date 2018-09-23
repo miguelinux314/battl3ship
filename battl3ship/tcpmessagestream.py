@@ -14,8 +14,7 @@
 # 
 #     You should have received a copy of the GNU General Public License
 #     along with Battl3ship.  If not, see <http://www.gnu.org/licenses/>.
-"""Class to provide streaming of messages over TCP
-
+"""Class to provide streaming of message.Message instances over TCP
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
 
@@ -38,9 +37,9 @@ class TCPMessageStream:
     """
     Class to provide streaming of messages over TCP.
 
-    The application protocol is simply a fixed length field of <bytes_message_length> characters
+    The application protocol is simply a fixed length field of `bytes_message_length` characters
     with the ASCII encoding (using leading '0' characters) of the length of the message data,
-    followed by the actual message data.
+    followed by the actual message data. Everything is utf-8 encoded.
     """
 
     def __init__(self, bytes_message_length, max_message_length, buffer_size,
@@ -60,6 +59,8 @@ class TCPMessageStream:
         self.name = name
 
     def send_message(self, message: Message, tcp_connection):
+        """Send a message over the tcp connection
+        """
         if be_verbose:
             print(f"[>>O?>> TCPMessageStream[{self.name}]] Sending message")
             print("[[Encoded]]='{}'".format(message.encode()))

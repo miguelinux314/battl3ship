@@ -254,24 +254,3 @@ class Py3SinkClient(GenericGameClient):
         else:
             if be_verbose:
                 print("[tcpclient.process_incoming_message] IGNORING incoming message: {}".format(message))
-
-    if __name__ == '__main__':
-        print("/" * 40)
-        print("{:/^40s}".format("    CLIENT    "))
-        print("/" * 40)
-
-        ip = "127.0.0.1"
-        port = 3333
-        if len(sys.argv) >= 2:
-            port = int(sys.argv[1])
-
-        name = "MiDo{}".format(12 + random.randint(0, 30))
-
-        client = Py3SinkClient(ip=ip, port=port, name=name, password=default_password)
-        client.connect()
-
-        # print "Sending cheeky hello message"
-        # client.send_message(MessageHello(player_from=client.player, player_to=client.server_player))
-
-        print("----- Connected. Waiting ~forever")
-        time.sleep(100000000)

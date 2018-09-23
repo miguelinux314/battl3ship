@@ -15,7 +15,6 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Battl3ship.  If not, see <http://www.gnu.org/licenses/>.
 """Represent a player in the game
-
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
 

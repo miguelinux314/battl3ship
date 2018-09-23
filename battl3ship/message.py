@@ -40,7 +40,18 @@ class MessageException(Exception):
     pass
 
 
-class Message():
+class Message:
+    """
+    Base class that represents a message to be passed to the server or to a player.
+    Message types allowed by the game protocol are represented by subclassing of Message.
+
+    The `encode()` method provides a string representation of the message, including
+    any data present in `self.data_dict`.
+
+    The static `parse_data()` method creates an instance of Message (of the appropriate
+    subclass) given a string as produced by `encode()`.
+    """
+
     def __init__(self, player_from=None, player_to=None, extra_info_str=None, data_dict=None):
         self.player_from = player_from
         self.player_to = player_to
@@ -54,6 +65,8 @@ class Message():
             for k, v in self.data_dict.items():
                 if k[0] != "_":
                     self.__setattr__(k, v)
+        else:
+            self.data_dict = {}
         self.encode()
 
     def __eq__(self, other):
@@ -62,7 +75,14 @@ class Message():
     def encode(self):
         """Return a string with this instance's class and self.data_dict.
 
-        Children classes should set data_dict as needed.
+        It always includes
+          * from_id : the id of the player sending the message
+          * to_id : the id of the destinatary player
+          * type : the name of the class
+        In addition, it includes any key=value pairs available in `self.data_dict`.
+
+        Subclasses that wish to include additional data must set any desired data
+        in `self.data_dict` and then call `Message.encode()`.
         """
         self.data_dict["type"] = self.__class__.__name__
         self.data_dict["extra_info_str"] = self.extra_info_str

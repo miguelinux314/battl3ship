@@ -14,7 +14,8 @@
 # 
 #     You should have received a copy of the GNU General Public License
 #     along with Battl3ship. If not, see <http://www.gnu.org/licenses/>.
-"""Represent the state of a game
+"""The Battl3ship class represents a state of the game and provides tools
+to validate and process player's actions, and update the game state accordingly.
 """
 __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
 
@@ -25,7 +26,16 @@ be_verbose = False
 
 ############################ End configurable part
 
-class Game3Shots:
+class Battl3ship:
+    """The Battl3ship class represents a state of the game and provides tools
+    to validate and process player's actions, and update the game state accordingly.
+
+    See `Battl3ship.is_is_valid_boat_layout` for a complete description of the boat
+    placement rules.
+
+    See `Battl3ship.Board.shot` for a complete description of the rules for shooting
+    and the interpretation of the returned results.
+    """
     default_board_width = 10
     default_board_height = 10
     required_boat_count_by_length = {
@@ -35,20 +45,27 @@ class Game3Shots:
         1: 4,
     }
 
-    def __init__(self, player_a, player_b, starting_player):
-        """Initialize a game and make it ready to be start()ed
+    def __init__(self, player_a, player_b, starting_player,
+                 board_width=None, board_height=None):
+        """Initialize a game and make it ready to be start()'ed.
         """
         self.player_a = player_a
         self.player_b = player_b
-        self.player_a_board = Game3Shots.Board(width=self.default_board_width, height=self.default_board_height)
-        self.player_b_board = Game3Shots.Board(width=self.default_board_width, height=self.default_board_height)
+        self.board_width = board_width if board_width is not None else self.default_board_width
+        self.board_height = board_height if board_height is not None else self.default_board_height
+        self.player_a_board = Battl3ship.Board(
+            width=self.board_width, height=self.board_height)
+        self.player_b_board = Battl3ship.Board(
+            width=self.board_width, height=self.board_height)
 
         self.player_turn = starting_player
         self.winner_player = None  # set only after game is finished
-        self.accepting_shots = False
+        self.accepting_shots = False  # set to True after set_boats has been called for both players
 
     @property
     def other_player(self):
+        """Return the "other player", that is, the player whose turn it is not.
+        """
         if self.player_turn == self.player_a:
             return self.player_b
         elif self.player_turn == self.player_b:
@@ -59,10 +76,14 @@ class Game3Shots:
 
     @property
     def id(self):
-        return Game3Shots.players_to_id(self.player_a, self.player_b)
+        """Get a game id derived from the players' ids and who is player_a and who is player_b.
+        """
+        return Battl3ship.players_to_id(self.player_a, self.player_b)
 
     @staticmethod
     def players_to_id(player_a, player_b):
+        """Get a game id derived from player_a's and player_b's ids
+        """
         if player_a is None:
             player_a_id = "None"
         else:
@@ -75,20 +96,28 @@ class Game3Shots:
         return "{} vs {}".format(player_a_id, player_b_id)
 
     def set_boats(self, player, row_col_lists):
-        """Set the boat placement for a player, which must be self.player_a or self.player_b..
+        """Set the boat placement for a player, which must be self.player_a or self.player_b, and valid.
+
+        Note that all row and col indices must be in the [1, height] and [1, width]
+          ranges, respectively.
+
+        :raise ValueError: if the row_col_lists do not describe a valid boat placement or player is neither
+          `self.player_a` nor `self.player_b`, or boats were already placed.
         """
-        assert self.is_valid_boat_layout(row_col_lists=row_col_lists)
+        if not self.is_valid_boat_layout(row_col_lists=row_col_lists):
+            raise ValueError(f"Invalid boat layout {row_col_lists}")
 
         if player.id == self.player_a.id:
             board = self.player_a_board
         elif player.id == self.player_b.id:
             board = self.player_b_board
         else:
-            raise Exception("[set_boats] Error! player {} not player_a {} nor player_b {}".format(
-                player, self.player_a, self.player_b))
+            raise ValueError(f"player {player} not player_a {player_a} nor player_b {player_b}")
 
-        print("Setting boats for", player, ":", row_col_lists)
-        assert not board.locked
+        if board.locked:
+            raise ValueError("Attempting to set_boats to an already locked Board")
+
+        # Input seems correct. Update board and lock it.
         for row_col_list in row_col_lists:
             for row, col in row_col_list:
                 board[row, col].boat_row_col_list = list(row_col_list)
@@ -96,8 +125,35 @@ class Game3Shots:
         board.locked = True
 
     def is_valid_boat_layout(self, row_col_lists):
+        """
+        Verify whether a given boat layout is valid for the game.
+
+        The rules for a valid boat placement are as follows:
+          * Each boat is represented by a list of (row, col) pairs. The number
+            of boats and their lenghts is given by `self.boat_count_by_length`.
+
+          * All row and col indices must be in the [1, `self.board_height`]
+            and [1, `self.board_width`] ranges, respectively.
+
+          * All boats must be entirely horizontal or entirely vertical. No corners,
+            no disjoint squares.
+
+          * Boats cannot share any square.
+
+          * No boat square can be in the vecinity (NW, N, NE, W, E, SW, S or SE)
+            of another boat's square).
+
+          * All boats must have at least one square outside the edge (edge being
+            the first and last rows, and the first and last columsn).
+
+        :param row_col_lists: a list of boats, each represented by a list of (row, col) coordinates
+         in [1, height] and [1, width], respectively.
+
+        :return: True or False, depending on whether the boat layout is valid..
+        """
         boat_count_by_length = dict()
-        boat_row_col_list_by_row_col = dict()  # d[row,col] -> [[r,c],[r,c],...] every square of the boat contributes one entry with its row,col
+        # d[row,col] -> [[r,c],[r,c],...] every square of the boat contributes one entry with its row,col
+        boat_row_col_list_by_row_col = dict()
 
         try:
             # Check boat lengths
@@ -108,8 +164,10 @@ class Game3Shots:
                     boat_count_by_length[len(row_col_list)] += 1
                 else:
                     boat_count_by_length[len(row_col_list)] = 1
-            assert len(list(boat_count_by_length.values())) == len(list(self.required_boat_count_by_length.values()))
-            assert all([v == boat_count_by_length[k] for k, v in self.required_boat_count_by_length.items()])
+            assert len(list(boat_count_by_length.values())) \
+                   == len(list(self.required_boat_count_by_length.values()))
+            assert all([v == boat_count_by_length[k]
+                        for k, v in self.required_boat_count_by_length.items()])
 
             # pool of all used squares (check no duplicates)
             used_row_col_list = [tuple(row_col)
@@ -134,58 +192,125 @@ class Game3Shots:
                 assert not all([col == 1 for row, col in row_col_list])
                 assert not all([col == 10 for row, col in row_col_list])
 
-                # Check that all boat is a line
-                assert all([row == row_col_list[0][0] for row, col in row_col_list]) \
-                       or all([col == row_col_list[0][1] for row, col in row_col_list])
+                # Check that all boat is a line and not disjoint
+                if all([row == row_col_list[0][0] for row, col in row_col_list]):
+                    # Horizontal boat
+                    cols = sorted([col for _, col in row_col_list])
+                    assert cols == list(range(cols[0], cols[0] + len(cols)))
+                elif all([col == row_col_list[0][1] for row, col in row_col_list]):
+                    # Vertical boat
+                    rows = sorted([row for row, _ in row_col_list])
+                    assert rows == list(range(rows[0], rows[0] + len(rows)))
+                else:
+                    assert False
 
             return True
         except AssertionError:
             return False
 
     def shot(self, player_from, row_col_lists):
-        """Make a shot in an active, accepting shots game
+        """Make a shot in an active, accepting shots game, updating the receiving player's
+        board and returning the combined shot results (and whether the game is finished).
+        The value of `self.player_turn` is automatically updated by this method.
+
+        The rules for shooting and the expected returned values are as follows:
+
+                * A player cannot shot twice in the same square in the same game
+                * If no shot hits a boat, both lists are empty
+                * If a boat is hit by one or more shots and all its squares are hit,
+                  the boat is "sunk" and its length appears in `sunk_length_list`.
+                * The length of `sunk_length_list` is equal to the number
+                  of boats sunk this turn. If two or more boats of the same length are sunk
+                  in this turn, that length appears repeated those many times in
+                  `sunk_length_list`.
+                * If a boat is hit one or more times this turn but one or more squares
+                  remain intact after this turn, it is "hit" (and not "sunk")
+                  and its length is added once to `hit_length_list`.
+                * If two or more boats of the same length are "hit" (but not "sunk"), their
+                  length appears repeated those many times in `hit_length_list`.
+                * If all boats of the receiving player are sunk, game_finished is True.
+                  Otherwise it is false.
+
+        This method verifies that the format and contents of the shots described by
+        row_col_lists is valid. Otherwise, a ValueError is raised.
+
+        :param player_from: must be equal to `self.player_turn` otherwise
+          ValueError is raised.
+        :param row_col_lists: a list of length-2 iterables (row, column) describing the
+          shots made. Note that all row and col indices must be in the [1, height] and [1, width]
+          ranges, respectively.
+
+        :raise ValueError: if either the player or the shot is not valid.
 
         :return: hit_list, sink_list, game_finished
         """
-        assert self.accepting_shots
-        assert player_from == self.player_turn
+        if not self.accepting_shots:
+            raise ValueError("This board is not accepting shots")
+        if player_from != self.player_turn:
+            raise ValueError(f"Invalid player_from {player_from}. "
+                             f"Is it their turn (player_turn={self.player_turn}?")
 
+        # Check that the shooting player is in their turn
         if player_from.id == self.player_a.id:
             opponent_board = self.player_b_board
         elif player_from.id == self.player_b.id:
             opponent_board = self.player_a_board
         else:
-            raise Exception("[shot] Error! Unknown player_from {}".format(player_from))
+            raise ValueError(f"Unknown player_from {player_from}")
 
-        if len(row_col_lists) != 3:
-            raise Exception("[shot] Error! Invalid row_col_lists = {} (len != 3)".format(row_col_lists))
+        # Enforce correct format
+        if len(row_col_lists) != 3 \
+                or any(len(rc) != 2 for rc in row_col_lists) \
+                or any((not 1 <= r <= self.board_height) or (not 1 <= c <= self.board_height)
+                       for r, c in row_col_lists):
+            raise ValueError(f"Invalid row_col_lists = {row_col_lists}")
 
+        # Avoid duplicated shots
+        if any(rc == row_col_lists[0] for rc in row_col_lists[1:]) \
+                or any(opponent_board[r, c].shot_id_list for r, c in row_col_lists):
+            raise ValueError("Invalid (repeated) shot")
+
+        # Make actual shot
         hit_list, sink_list, game_finished = opponent_board.shot(row_col_lists)
         if game_finished:
             self.winner_player = self.player_turn
+
+        # Switch turns
         self.player_turn = self.other_player
 
         return hit_list, sink_list, game_finished
 
     def __str__(self):
-        return "[Game3Shots#{}:PlayerA={} vs PlayerB={}:player_turn={}".format(
+        return "[Battl3ship#{}:PlayerA={} vs PlayerB={}:player_turn={}".format(
             self.id, self.player_a, self.player_b, self.player_turn)
 
     class Board:
+        """Represent a player's game board state and offer an interface to update it.
+
+        The access method board[x,y] returns the corresponding Square instance, which in
+        turn can be queried to obtain any boats or shots placed there.
+        """
+
         def __init__(self, width, height):
             self.width = width
             self.height = height
-            self.square_by_xy = {(x, y): Game3Shots.Square(x, y) for x in range(width + 1) for y in range(height + 1)}
+            self.square_by_xy = {(x, y): Battl3ship.Square(x, y) for x in range(width + 1) for y in range(height + 1)}
             self.locked = False
             self.shots = []
             self.boat_row_col_list = None
 
         def shot(self, row_col_lists):
-            """Make a shot on the board, updating the squares as necessary
+            """Make a shot on the board, updating the squares as necessary, and reporting the combined
+            shot results as (hit_length_list, sunk_length_list, game_finished)
+            as described in `Battl3ship.shot`.
+
+            Some sanity checks are performed, but the caller is responsible for verifying input
+            format and semantics.
             
-            :param row_col_lists: the shot in format [[r1,c1], [r2,c2], [r3,c3]]
-            :return: hit_length_list, a list of the lengths of the hit ships (if any) 
-                     sunk_length_list, a list of the lengths of the sunk ships (if any) 
+            :param row_col_lists: the shot in format ((r1,c1), (r2,c2), (r3,c3)).
+              Any number of shots can be fired in the same coordinates.
+            :return: hit_length_list, a sorted list of the lengths of the hit ships (if any)
+                     sunk_length_list, a sorted list of the lengths of the sunk ships (if any)
                      game_finished, true iff all boats have been sunk in this board
             """
             assert self.locked
@@ -196,7 +321,11 @@ class Game3Shots:
             sunk_boats = []
 
             for (row, col) in row_col_lists:
+                # Add the shot to the corresponding square
                 self[row, col].shot_id_list.append(shot_id)
+
+                # Find any boat hit or sunk by this shot, and append it
+                # to hit_boats and sunk_boats
                 if len(self[row, col].shot_id_list) == 1:
                     # Only reporting the first shot on each square
                     boat_as_tuples = tuple([(r, c) for (r, c) in self[row, col].boat_row_col_list])
@@ -210,6 +339,7 @@ class Game3Shots:
                     if any(boat_shot_bools):
                         hit_boats.append(boat_as_tuples)
 
+            # Each boat is reported only once.
             sunk_boats = list(set(sunk_boats))
             hit_boats = [b for b in list(set(hit_boats))
                          if b not in sunk_boats]
@@ -223,30 +353,79 @@ class Game3Shots:
                         game_finished = False
                         break
 
-            return list(map(len, hit_boats)), list(map(len, sunk_boats)), game_finished
+            return sorted(len(boat) for boat in hit_boats), \
+                   sorted(len(boat) for boat in sunk_boats), \
+                   game_finished
 
-        def __getitem__(self, xy_tuple):
-            if len(xy_tuple) != 2:
+        def __getitem__(self, index):
+            """Get the square or list of Squares at the positions given by
+            a r,c slice.
+            """
+            if len(index) != 2:
                 raise Exception("[Board.__getitem__] Error! This is a 2D board, please index by (x,y)")
-            if isinstance(xy_tuple[0], slice) or isinstance(xy_tuple[1], slice):
+            if isinstance(index[0], slice) or isinstance(index[1], slice):
                 matching_squares = []
-                if isinstance(xy_tuple[0], slice):
-                    x_coordinates = range(*xy_tuple[0].indices(self.width))
+                if isinstance(index[0], slice):
+                    x_coordinates = range(*index[0].indices(self.width))
                 else:
-                    x_coordinates = [xy_tuple[0]]
-                if isinstance(xy_tuple[1], slice):
-                    y_coordinates = range(*xy_tuple[1].indices(self.height))
+                    x_coordinates = [index[0]]
+                if isinstance(index[1], slice):
+                    y_coordinates = range(*index[1].indices(self.height))
                 else:
-                    y_coordinates = [xy_tuple[1]]
+                    y_coordinates = [index[1]]
 
                 for x in x_coordinates:
                     for y in y_coordinates:
                         matching_squares.append(self.square_by_xy[(x, y)])
                 return matching_squares
             else:
-                return self.square_by_xy[xy_tuple]
+                return self.square_by_xy[index]
+
+        def __str__(self):
+            """Return a textual representation of the board.
+
+            Key:
+                "·" : empty square
+                "B" : boat square (not hit)
+                "H" : boat square (hit or sunk)
+                "M" : missed shot (no boat)
+            """
+            empty_char = "·"
+            nothit_boat_char = "B"
+            hit_boat_char = "H"
+            missed_shot_char = "M"
+
+            representation_chars = ["+"] + (["-"] * self.width) + ["+", "\n"]
+            for r in range(self.height):
+                representation_chars.append("|")
+                for c in range(self.height):
+                    if not self[r, c].boat_row_col_list:
+                        if self[r, c].shot_id_list:
+                            representation_chars.append(missed_shot_char)
+                        else:
+                            representation_chars.append(empty_char)
+                    else:
+                        if self[r, c].shot_id_list:
+                            representation_chars.append(hit_boat_char)
+                        else:
+                            representation_chars.append(nothit_boat_char)
+                representation_chars.append("|")
+                representation_chars.append("\n")
+            representation_chars += ["+"] + (["-"] * self.width) + ["+", "\n"]
+            return "".join(representation_chars)
 
     class Square:
+        """Represent a board's square, and provide fast access to the any boat or
+        shot placed in it.
+
+        * The `self.boat_row_col_list` property contains either an empty list (if no
+          boat is placed in the squre, or a list of (x,y) coordinates representing
+          the coordinates of the boat placed in this square.
+
+        * The `self.shot_id_list` contains a (possibly) empty list of shot ids
+          performed in this square.
+        """
+
         def __init__(self, x, y, shot_id_list=None, boat_row_col_list=None):
             self.x = x
             self.y = y
@@ -269,10 +448,10 @@ class Game3Shots:
             return self.__str__()
 
 
-def test():
+def test_syntax():
     width = 10
     height = 30
-    board = Game3Shots.Board(width=width, height=height)
+    board = Battl3ship.Board(width=width, height=height)
 
     for x in range(width):
         for y in range(height):
@@ -291,4 +470,4 @@ def test():
 
 
 if __name__ == '__main__':
-    test()
+    test_syntax()
