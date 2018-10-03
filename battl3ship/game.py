@@ -23,6 +23,16 @@ __author__ = "Miguel Hernández Cabronero <mhernandez314@gmail.com>"
 # Be verbose?
 be_verbose = False
 
+default_board_width = 10
+default_board_height = 10
+
+required_boat_count_by_length = {
+    4: 1,
+    3: 2,
+    2: 3,
+    1: 4,
+}
+
 
 ############################ End configurable part
 
@@ -36,14 +46,9 @@ class Battl3ship:
     See `Battl3ship.Board.shot` for a complete description of the rules for shooting
     and the interpretation of the returned results.
     """
-    default_board_width = 10
-    default_board_height = 10
-    required_boat_count_by_length = {
-        4: 1,
-        3: 2,
-        2: 3,
-        1: 4,
-    }
+    default_board_width = default_board_width
+    default_board_height = default_board_height
+    required_boat_count_by_length = required_boat_count_by_length
 
     def __init__(self, player_a, player_b, starting_player,
                  board_width=None, board_height=None):
@@ -51,8 +56,8 @@ class Battl3ship:
         """
         self.player_a = player_a
         self.player_b = player_b
-        self.board_width = board_width if board_width is not None else self.default_board_width
-        self.board_height = board_height if board_height is not None else self.default_board_height
+        self.board_width = board_width if board_width is not None else default_board_width
+        self.board_height = board_height if board_height is not None else default_board_height
         self.player_a_board = Battl3ship.Board(
             width=self.board_width, height=self.board_height)
         self.player_b_board = Battl3ship.Board(
@@ -118,13 +123,11 @@ class Battl3ship:
             raise ValueError("Attempting to set_boats to an already locked Board")
 
         # Input seems correct. Update board and lock it.
-        for row_col_list in row_col_lists:
-            for row, col in row_col_list:
-                board[row, col].boat_row_col_list = list(row_col_list)
+        board.set_boats(row_col_lists)
         board.boat_row_col_list = list(row_col_lists)
         board.locked = True
 
-    def is_valid_boat_layout(self, row_col_lists):
+    def is_valid_boat_layout(self, row_col_lists, ignore_boat_count=False):
         """
         Verify whether a given boat layout is valid for the game.
 
@@ -148,6 +151,11 @@ class Battl3ship:
 
         :param row_col_lists: a list of boats, each represented by a list of (row, col) coordinates
          in [1, height] and [1, width], respectively.
+        :param ignore_boat_count: if True, the condition that all boats must be placed
+          is ignored. That is, zero or more boats can be considered a valid layout
+          as long as the number of boats of each length does not EXCEED the maximum
+          (and satisfy other conditions). If False, the number of boats of each length
+          must be EQUAL TO the maximum defined in Battl3ship.boat_count_by_length.
 
         :return: True or False, depending on whether the boat layout is valid..
         """
@@ -164,48 +172,58 @@ class Battl3ship:
                     boat_count_by_length[len(row_col_list)] += 1
                 else:
                     boat_count_by_length[len(row_col_list)] = 1
-            assert len(list(boat_count_by_length.values())) \
-                   == len(list(self.required_boat_count_by_length.values()))
-            assert all([v == boat_count_by_length[k]
-                        for k, v in self.required_boat_count_by_length.items()])
 
-            # pool of all used squares (check no duplicates)
+            if not ignore_boat_count:
+                assert all([boat_count_by_length.get(length, 0) == required_count
+                            for length, required_count in required_boat_count_by_length.items()])
+            else:
+                assert all([boat_count_by_length.get(length, 0) <= required_count
+                            for length, required_count in required_boat_count_by_length.items()])
+
+            # Boat lengths can only be as configured
+            assert all(found_key in required_boat_count_by_length.keys()
+                       for found_key in boat_count_by_length.keys())
+
+            # pool of all used squares
             used_row_col_list = [tuple(row_col)
                                  for row_col_list in row_col_lists
                                  for row_col in row_col_list]
+            # Check there are no duplicated squares
             assert len(used_row_col_list) == len(list(set(used_row_col_list)))
-            used_row_col_list = list(set(used_row_col_list))
-            for row_col_list in row_col_lists:
-                for row, col in row_col_list:
-                    # For each boat square, check that all surrounding space is valid (empty or same boat)
-                    for dx in [-1, 0, 1]:
-                        for dy in [-1, 0, 1]:
-                            for ddx in [-1, 0, 1]:
-                                for ddy in [-1, 0, 1]:
-                                    if [row + dy + ddy, col + dx + ddx] in used_row_col_list:
-                                        assert boat_row_col_list_by_row_col[row, col] == \
-                                               boat_row_col_list_by_row_col[row + dy + ddy, col + dx + ddx]
+
+            for i in range(len(row_col_lists)):
+                boat_a = row_col_lists[i]
 
                 # Enforce the edge rule
-                assert not all([row == 1 for row, col in row_col_list])
-                assert not all([row == 10 for row, col in row_col_list])
-                assert not all([col == 1 for row, col in row_col_list])
-                assert not all([col == 10 for row, col in row_col_list])
+                assert not all([row == 1 for row, col in boat_a])
+                assert not all([row == 10 for row, col in boat_a])
+                assert not all([col == 1 for row, col in boat_a])
+                assert not all([col == 10 for row, col in boat_a])
 
-                # Check that all boat is a line and not disjoint
-                if all([row == row_col_list[0][0] for row, col in row_col_list]):
-                    # Horizontal boat
-                    cols = sorted([col for _, col in row_col_list])
-                    assert cols == list(range(cols[0], cols[0] + len(cols)))
-                elif all([col == row_col_list[0][1] for row, col in row_col_list]):
-                    # Vertical boat
-                    rows = sorted([row for row, _ in row_col_list])
-                    assert rows == list(range(rows[0], rows[0] + len(rows)))
-                else:
-                    assert False
+                # Check that boat is a line and not disjoint
+                if len(boat_a) > 1:
+                    if all(row == boat_a[0][0] for row, col in boat_a[1:]):
+                        # Horizontal boat
+                        cols = sorted([col for _, col in boat_a])
+                        assert cols == list(range(cols[0], cols[0] + len(cols)))
+                    elif all(col == boat_a[0][1] for row, col in boat_a[1:]):
+                        # Vertical boat
+                        rows = sorted([row for row, _ in boat_a])
+                        assert rows == list(range(rows[0], rows[0] + len(rows)))
+                    else:
+                        raise AssertionError("Row is not linear")
 
+                # Check that this boat does not collide with any other
+                for j in range(i+1, len(row_col_lists)):
+                    boat_b = row_col_lists[j]
+
+                    for r_a, c_a in boat_a:
+                        for r_b, c_b in boat_b:
+                            for dx_a in [-1, 0, 1]:
+                                for dy_a in [-1, 0, 1]:
+                                    assert (r_a + dy_a != r_b) or (c_a + dx_a != c_b)
             return True
-        except AssertionError:
+        except AssertionError as ex:
             return False
 
     def shot(self, player_from, row_col_lists):
@@ -226,6 +244,9 @@ class Battl3ship:
                 * If a boat is hit one or more times this turn but one or more squares
                   remain intact after this turn, it is "hit" (and not "sunk")
                   and its length is added once to `hit_length_list`.
+                  For example, if a boat of length 3 is hit by two different shots
+                  in a single turn and the third shot does not hit anything, the
+                  result in that turn will be ([3], [])
                 * If two or more boats of the same length are "hit" (but not "sunk"), their
                   length appears repeated those many times in `hit_length_list`.
                 * If all boats of the receiving player are sunk, game_finished is True.
@@ -291,7 +312,7 @@ class Battl3ship:
         turn can be queried to obtain any boats or shots placed there.
         """
 
-        def __init__(self, width, height):
+        def __init__(self, width=default_board_width, height=default_board_height):
             self.width = width
             self.height = height
             self.square_by_xy = {(x, y): Battl3ship.Square(x, y) for x in range(width + 1) for y in range(height + 1)}
@@ -357,6 +378,11 @@ class Battl3ship:
                    sorted(len(boat) for boat in sunk_boats), \
                    game_finished
 
+        def set_boats(self, row_col_lists):
+            for row_col_list in row_col_lists:
+                for row, col in row_col_list:
+                    self[row, col].boat_row_col_list = list(row_col_list)
+
         def __getitem__(self, index):
             """Get the square or list of Squares at the positions given by
             a r,c slice.
@@ -396,9 +422,9 @@ class Battl3ship:
             missed_shot_char = "M"
 
             representation_chars = ["+"] + (["-"] * self.width) + ["+", "\n"]
-            for r in range(self.height):
+            for r in range(1, self.height + 1):
                 representation_chars.append("|")
-                for c in range(self.height):
+                for c in range(1, self.height + 1):
                     if not self[r, c].boat_row_col_list:
                         if self[r, c].shot_id_list:
                             representation_chars.append(missed_shot_char)
@@ -411,7 +437,7 @@ class Battl3ship:
                             representation_chars.append(nothit_boat_char)
                 representation_chars.append("|")
                 representation_chars.append("\n")
-            representation_chars += ["+"] + (["-"] * self.width) + ["+", "\n"]
+            representation_chars += ["+"] + (["-"] * self.width) + ["+"]
             return "".join(representation_chars)
 
     class Square:
