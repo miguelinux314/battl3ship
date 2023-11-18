@@ -5,7 +5,7 @@ _lengths_ (and not the position) of any hit or sunk ships.
 
 ![Screenshot](https://github.com/miguelinux314/battl3ship/raw/master/doc/shots_screenshot.png "Battl3ship")
 
-The first player sinking all of their opponent's ships wins!
+The first player to sink all of their opponent's ships wins!
 
 ## Rules and Help
 * The **goal** of the game is to sink all your opponent's ships.
@@ -22,7 +22,7 @@ The first player sinking all of their opponent's ships wins!
   
 ## Installation 
 ### Dependencies
-* Python 2.7: [Windows Installer](https://www.python.org/ftp/python/2.7.14/python-2.7.14.msi), [Mac OSX Installers](https://www.python.org/downloads/release/python-2714/), installed by default in most Linuxes.
+* Python >= 2.7 or 3.x: [Windows Installer](https://www.python.org/ftp/python/2.7.14/python-2.7.14.msi), [Mac OSX Installers](https://www.python.org/downloads/release/python-2714/), installed by default in most Linuxes.
 * The [Tornado](http://www.tornadoweb.org/en/stable/) python library. You can _either_:
   * Execute `install_dependencies.py`
   * or run `pip install tornado`
@@ -35,5 +35,10 @@ The first player sinking all of their opponent's ships wins!
 4. Other players can join you at http://[Your_public_IP](https://whatismyipaddress.com/):8080
 5. Play!
 
-Note that you will have to configure your firewalls to let traffic through port TCP 8080. You may need [instructions for MacOS(not mine)](https://www.macworld.co.uk/how-to/mac-software/how-open-specific-ports-in-os-x-1010-firewall-3616405/) or [instructions for Windows (also not mine)](http://www.tomshardware.com/faq/id-3114787/open-firewall-ports-windows.html).
-Don't forget to [forward ports in your router](https://www.pcworld.com/article/244314/how_to_forward_ports_on_your_router.html), too!
+Notes:
+
+- You will have to configure your firewalls to let traffic through port TCP 8080. 
+  You may need [instructions for MacOS(not mine)](https://www.macworld.co.uk/how-to/mac-software/how-open-specific-ports-in-os-x-1010-firewall-3616405/) or [instructions for Windows (also not mine)](http://www.tomshardware.com/faq/id-3114787/open-firewall-ports-windows.html). 
+  Don't forget to [forward ports in your router](https://www.pcworld.com/article/244314/how_to_forward_ports_on_your_router.html), too!
+
+- This project is no longer maintained, and there are some deprecated features. Still, you can play a game in 2023!
